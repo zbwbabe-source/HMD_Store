@@ -768,7 +768,7 @@ function OverallSummaryCard({
     <article className="rounded-[24px] border border-white/55 bg-white/85 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm text-stone-500">{title}</p>
+          <p className="text-base font-semibold leading-snug text-stone-900">{title}</p>
           <p className="mt-1 text-xs text-stone-400">{basis}</p>
         </div>
         <div className="inline-flex rounded-full border border-stone-300 bg-white p-1">
@@ -795,11 +795,15 @@ function OverallSummaryCard({
         </div>
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-stone-400">YOY</p>
-          <p className={`mt-1 text-base font-semibold ${valueTone(yoyValue).replace("text-stone-400", "text-stone-900")}`}>{formatYoyRate(yoyValue)}</p>
+          <p className="mt-1">
+            <span className={`inline-flex rounded-full px-3 py-1 text-base font-semibold ${pillTone(yoyValue)}`}>{formatYoyRate(yoyValue)}</span>
+          </p>
         </div>
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-stone-400">전전년비</p>
-          <p className={`mt-1 text-base font-semibold ${valueTone(yoyTwoValue).replace("text-stone-400", "text-stone-900")}`}>{formatYoyRate(yoyTwoValue)}</p>
+          <p className="mt-1">
+            <span className={`inline-flex rounded-full px-3 py-1 text-base font-semibold ${pillTone(yoyTwoValue)}`}>{formatYoyRate(yoyTwoValue)}</span>
+          </p>
         </div>
       </div>
     </article>
@@ -831,7 +835,7 @@ function ChannelHighlightCard({
 }) {
   return (
     <article className="rounded-[24px] border border-white/55 bg-white/85 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
-      <p className="text-sm text-stone-500">{channel}</p>
+      <p className="text-base font-semibold leading-snug text-stone-900">{channel}</p>
       <p className="mt-1 text-xs text-stone-400">{basis}</p>
       {summaryValue ? <p className="mt-1 text-[12px] font-semibold text-stone-600">{summaryValue}</p> : null}
       <div className="mt-3 space-y-3">
@@ -987,29 +991,19 @@ function renderMetricComparison(yoyPrev: number | null | undefined, yoyTwo: numb
   }
 
   return (
-    <>
+    <span className="inline-flex flex-wrap items-center gap-1.5">
       {yoyPrev != null && !Number.isNaN(yoyPrev) ? (
-        <span className={`font-semibold ${valueTone(yoyPrev)}`}>YOY {formatYoyRate(yoyPrev)}</span>
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold ${pillTone(yoyPrev)}`}>YOY {formatYoyRate(yoyPrev)}</span>
       ) : null}
-      {yoyPrev != null && !Number.isNaN(yoyPrev) && yoyTwo != null && !Number.isNaN(yoyTwo) ? <span className="text-stone-400">, </span> : null}
       {yoyTwo != null && !Number.isNaN(yoyTwo) ? (
-        <span className={`font-semibold ${valueTone(yoyTwo)}`}>전전년비 {formatYoyRate(yoyTwo)}</span>
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold ${pillTone(yoyTwo)}`}>전전년비 {formatYoyRate(yoyTwo)}</span>
       ) : null}
-    </>
+    </span>
   );
 }
 
 function renderCardComparison(channel: string, yoyPrev: number | null | undefined, yoyTwo: number | null | undefined): ReactNode | null {
-  const metricNode = renderMetricComparison(yoyPrev, yoyTwo);
-  if (!metricNode) return null;
-
-  return (
-    <>
-      <span className="text-stone-600">({channel} </span>
-      {metricNode}
-      <span className="text-stone-600">)</span>
-    </>
-  );
+  return renderMetricComparison(yoyPrev, yoyTwo);
 }
 
 function formatCardBasis(selectedMonth: number, mode: CardMetricMode) {
