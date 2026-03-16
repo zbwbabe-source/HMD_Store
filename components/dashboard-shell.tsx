@@ -58,6 +58,7 @@ type MonthMetric = CellMetric & {
 type RowKind = "overall-total" | "country-total" | "brand-total" | "channel-total" | "store";
 type ViewMode = "yoy" | "sales";
 type SortDirection = "desc" | "asc";
+type CardMetricMode = "ytd" | "month";
 
 type TableRow = {
   kind: RowKind;
@@ -74,7 +75,7 @@ type TableRow = {
 
 const TEXT = {
   emptyRegion: "표시할 리전 데이터가 없습니다.",
-  title: "매장 월별 2026 Sales / YoY",
+  title: "홍콩법인 매장 월별 Sales / YoY",
   intro: "12개월 전체, 선택월 YTD, 연간 합계, 그리고 채널별 합계를 한 화면에서 볼 수 있게 정리했습니다.",
   period: "실적 기준월",
   baseYear: "기준 연도",
@@ -139,6 +140,7 @@ export function DashboardShell({
   const [regionKey, setRegionKey] = useState(initialRegionKey);
   const [selectedBrand, setSelectedBrand] = useState("M");
   const [selectedMonth, setSelectedMonth] = useState(initialPeriod.month);
+  const [cardMetricMode, setCardMetricMode] = useState<CardMetricMode>("ytd");
   const [expandedChannels, setExpandedChannels] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<ViewMode>("yoy");
   const [sortMonth, setSortMonth] = useState<number | null>(null);
@@ -328,7 +330,11 @@ export function DashboardShell({
   };
 
   const storeOnlyRows = tableRows;
-  const overallCardMetric = useMemo(() => aggregateMetricCells(storeOnlyRows.map((row) => row.ytd)), [storeOnlyRows]);
+  const getCardMetric = useMemo(
+    () => (row: TableRow) => (cardMetricMode === "month" ? row.months[selectedMonth - 1] : row.ytd),
+    [cardMetricMode, selectedMonth],
+  );
+  const overallCardMetric = useMemo(() => aggregateMetricCells(storeOnlyRows.map((row) => getCardMetric(row))), [getCardMetric, storeOnlyRows]);
   const overallCardTitle = useMemo(() => {
     if (regionKey === "HKMC") return "홍콩마카오 합계";
     if (regionKey === "TW") return "대만 전체";
@@ -345,28 +351,29 @@ export function DashboardShell({
     }
 
     return Array.from(grouped.entries()).map(([channel, rows]) => {
-      const channelMetric = aggregateMetricCells(rows.map((row) => row.ytd));
-      const topYoy = rows.reduce<{ storeName: string; value: number; yoyTwo: number | null } | null>((best, row) => {
-        const value = row.ytd.yoyPrev;
+      const metrics = rows.map((row) => ({ row, metric: getCardMetric(row) }));
+      const channelMetric = aggregateMetricCells(metrics.map((entry) => entry.metric));
+      const topYoy = metrics.reduce<{ storeName: string; value: number; yoyTwo: number | null } | null>((best, entry) => {
+        const value = entry.metric.yoyPrev;
         if (value == null) return best;
         if (!best || value > best.value) {
-          return { storeName: row.storeName, value, yoyTwo: row.ytd.yoyTwo };
+          return { storeName: entry.row.storeName, value, yoyTwo: entry.metric.yoyTwo };
         }
         return best;
       }, null);
 
-      const topSales = rows.reduce<{ storeName: string; value: number; yoyPrev: number | null; yoyTwo: number | null } | null>((best, row) => {
-        const value = row.ytd.sales;
+      const topSales = metrics.reduce<{ storeName: string; value: number; yoyPrev: number | null; yoyTwo: number | null } | null>((best, entry) => {
+        const value = entry.metric.sales;
         if (value == null) return best;
         if (!best || value > best.value) {
-          return { storeName: row.storeName, value, yoyPrev: row.ytd.yoyPrev, yoyTwo: row.ytd.yoyTwo };
+          return { storeName: entry.row.storeName, value, yoyPrev: entry.metric.yoyPrev, yoyTwo: entry.metric.yoyTwo };
         }
         return best;
       }, null);
 
       return { channel, channelMetric, topYoy, topSales };
     }).sort((a, b) => getChannelCardOrder(a.channel) - getChannelCardOrder(b.channel) || a.channel.localeCompare(b.channel));
-  }, [storeOnlyRows]);
+  }, [cardMetricMode, getCardMetric, selectedMonth, storeOnlyRows]);
 
   if (!region) {
     return (
@@ -463,7 +470,9 @@ export function DashboardShell({
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <OverallSummaryCard
             title={overallCardTitle}
-            basis={formatCardBasis(selectedMonth)}
+            basis={formatCardBasis(selectedMonth, cardMetricMode)}
+            mode={cardMetricMode}
+            onModeChange={setCardMetricMode}
             salesValue={formatSalesCell(overallCardMetric.sales)}
             yoyValue={overallCardMetric.yoyPrev}
             yoyTwoValue={overallCardMetric.yoyTwo}
@@ -472,7 +481,7 @@ export function DashboardShell({
             <ChannelHighlightCard
               key={item.channel}
               channel={item.channel}
-              basis={formatCardBasis(selectedMonth)}
+              basis={formatCardBasis(selectedMonth, cardMetricMode)}
               summaryValue={renderCardComparison(item.channel, item.channelMetric.yoyPrev, item.channelMetric.yoyTwo)}
               salesLabel={TEXT.channelTopSales}
               yoyLabel={TEXT.channelTopYoy}
@@ -741,20 +750,44 @@ function ToggleButton({ children, active, onClick }: { children: ReactNode; acti
 function OverallSummaryCard({
   title,
   basis,
+  mode,
+  onModeChange,
   salesValue,
   yoyValue,
   yoyTwoValue,
 }: {
   title: string;
   basis: string;
+  mode: CardMetricMode;
+  onModeChange: (mode: CardMetricMode) => void;
   salesValue: string;
   yoyValue: number | null;
   yoyTwoValue: number | null;
 }) {
   return (
     <article className="rounded-[24px] border border-white/55 bg-white/85 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
-      <p className="text-sm text-stone-500">{title}</p>
-      <p className="mt-1 text-xs text-stone-400">{basis}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-stone-500">{title}</p>
+          <p className="mt-1 text-xs text-stone-400">{basis}</p>
+        </div>
+        <div className="inline-flex rounded-full border border-stone-300 bg-white p-1">
+          <button
+            type="button"
+            onClick={() => onModeChange("ytd")}
+            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${mode === "ytd" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+          >
+            누적
+          </button>
+          <button
+            type="button"
+            onClick={() => onModeChange("month")}
+            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${mode === "month" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+          >
+            당월
+          </button>
+        </div>
+      </div>
       <div className="mt-3 space-y-3">
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-stone-400">실판매출</p>
@@ -979,8 +1012,8 @@ function renderCardComparison(channel: string, yoyPrev: number | null | undefine
   );
 }
 
-function formatCardBasis(selectedMonth: number) {
-  return `${selectedMonth}월 누적 기준`;
+function formatCardBasis(selectedMonth: number, mode: CardMetricMode) {
+  return mode === "month" ? `${selectedMonth}월 기준` : `${selectedMonth}월 누적 기준`;
 }
 
 function formatTimestamp(value: string) {
