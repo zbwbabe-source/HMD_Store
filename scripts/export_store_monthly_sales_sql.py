@@ -1,15 +1,23 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
+import calendar
+import csv
 import json
 import sqlite3
+import subprocess
+import sys
 from collections import defaultdict
 from pathlib import Path
 
 DB_PATH = Path("data/store_dashboard.sqlite")
+SETTINGS_PATH = Path("data/store-view-settings.json")
+EXCHANGE_RATE_CSV = Path("TW_Exchange Rate.csv")
+SNOWFLAKE_HELPER = Path("scripts/fetch_snowflake_actuals.mjs")
 REGIONS = {
     "HKMC": {"HK", "MC"},
     "TW": {"TW"},
 }
+ACTUAL_SALES_ACCOUNT_NAME = "실매출액"
 
 
 def resolve_region(country: str) -> str | None:
@@ -19,7 +27,60 @@ def resolve_region(country: str) -> str | None:
     return None
 
 
-def main() -> None:
+def load_actual_period() -> tuple[int, int]:
+    payload = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+    raw = str(payload.get("actualPeriod") or "")
+    year_text, month_text = raw.split("-", 1)
+    year = int(year_text)
+    month = int(month_text)
+    if month < 1 or month > 12:
+        raise ValueError(f"Invalid actualPeriod month: {raw}")
+    return year, month
+
+
+def load_tw_exchange_rates() -> dict[str, float]:
+    rates: dict[str, float] = {}
+    with EXCHANGE_RATE_CSV.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.reader(handle)
+        next(reader, None)
+        for row in reader:
+            if len(row) < 2:
+                continue
+            period = row[0].strip()
+            rate_raw = row[1].strip()
+            if not period or not rate_raw:
+                continue
+            rates[period] = float(rate_raw)
+    return rates
+
+
+def yymm_from_period_key(period_key: str) -> str:
+    year, month = period_key.split("-")
+    return f"{year[-2:]}{month}"
+
+
+def resolve_tw_rate(period_key: str, exchange_rates: dict[str, float]) -> float:
+    yymm = yymm_from_period_key(period_key)
+    if yymm in exchange_rates:
+        return exchange_rates[yymm]
+
+    available = sorted(exchange_rates.keys())
+    if not available:
+        raise KeyError("TW exchange rates are empty")
+
+    earlier = [key for key in available if key <= yymm]
+    if earlier:
+        return exchange_rates[earlier[-1]]
+    return exchange_rates[available[0]]
+
+
+def convert_amount(amount: float, country: str, period_key: str, exchange_rates: dict[str, float]) -> float:
+    if country != "TW":
+        return amount
+    return amount * resolve_tw_rate(period_key, exchange_rates)
+
+
+def load_excel_baseline(exchange_rates: dict[str, float]) -> dict[str, dict[str, dict[str, object]]]:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     try:
@@ -31,63 +92,114 @@ def main() -> None:
             GROUP BY brand, country, channel, store_code, store_name, period_key
             ORDER BY country, store_code, period_key
             """,
-            ("실매출액",),
-        ).fetchall()
-        annual_rows = conn.execute(
-            """
-            SELECT brand, country, channel, store_code, store_name, year, SUM(CAST(amount AS REAL)) AS amount
-            FROM annual_pnl
-            WHERE account_name_clean = ?
-            GROUP BY brand, country, channel, store_code, store_name, year
-            ORDER BY country, store_code, year
-            """,
-            ("실매출액",),
+            (ACTUAL_SALES_ACCOUNT_NAME,),
         ).fetchall()
     finally:
         conn.close()
 
     payload: dict[str, dict[str, dict[str, object]]] = {"HKMC": {}, "TW": {}}
-
     for row in monthly_rows:
-        region = resolve_region(row["country"])
+        country = str(row["country"])
+        region = resolve_region(country)
         if region is None:
             continue
+        store_code = str(row["store_code"])
         store = payload[region].setdefault(
-            row["store_code"],
+            store_code,
             {
                 "brand": row["brand"],
+                "country": country,
                 "channel": row["channel"],
                 "storeName": row["store_name"],
                 "monthlySales": {},
                 "annualTotals": {},
             },
         )
-        store["brand"] = row["brand"]
-        store["channel"] = row["channel"]
-        store["storeName"] = row["store_name"]
-        store["monthlySales"][row["period_key"]] = float(row["amount"] or 0)
+        period_key = str(row["period_key"])
+        raw_amount = float(row["amount"] or 0.0)
+        store["monthlySales"][period_key] = round(convert_amount(raw_amount, country, period_key, exchange_rates), 2)
+    return payload
 
-    for row in annual_rows:
-        region = resolve_region(row["country"])
-        if region is None:
-            continue
-        store = payload[region].setdefault(
-            row["store_code"],
-            {
-                "brand": row["brand"],
-                "channel": row["channel"],
-                "storeName": row["store_name"],
-                "monthlySales": {},
-                "annualTotals": {},
-            },
-        )
-        store["brand"] = row["brand"]
-        store["channel"] = row["channel"]
-        store["storeName"] = row["store_name"]
-        store["annualTotals"][str(row["year"])] = float(row["amount"] or 0)
 
-    print(json.dumps(payload, ensure_ascii=False))
+def flatten_store_dimensions(payload: dict[str, dict[str, dict[str, object]]]) -> dict[str, dict[str, object]]:
+    dimensions: dict[str, dict[str, object]] = {}
+    for region_payload in payload.values():
+        for store_code, store in region_payload.items():
+            dimensions[store_code] = store
+    return dimensions
+
+
+def fetch_sql_actuals(store_dimensions: dict[str, dict[str, object]], actual_year: int, actual_month: int) -> dict[str, dict[str, float]]:
+    if not store_dimensions:
+        return {}
+
+    request_payload = {
+        "storeCodes": sorted(store_dimensions.keys()),
+        "actualYear": actual_year,
+        "actualMonth": actual_month,
+    }
+    result = subprocess.run(
+        ["node", str(SNOWFLAKE_HELPER)],
+        input=json.dumps(request_payload, ensure_ascii=False),
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=Path.cwd(),
+        env={**dict(**__import__("os").environ), "PYTHONIOENCODING": "utf-8"},
+    )
+    stdout_lines = [line for line in (result.stdout or "").splitlines() if line.strip()]
+    rows = json.loads(stdout_lines[-1]) if stdout_lines else []
+    monthly_actuals: dict[str, dict[str, float]] = defaultdict(dict)
+    for row in rows:
+        store_code = str(row.get("STORE_CODE") or "")
+        sale_year = int(row.get("SALE_YEAR"))
+        sale_month = int(row.get("SALE_MONTH"))
+        period_key = f"{sale_year:04d}-{sale_month:02d}"
+        monthly_actuals[store_code][period_key] = float(row.get("ACTUAL_SALES") or 0.0)
+    return monthly_actuals
+
+
+def merge_sources(
+    payload: dict[str, dict[str, dict[str, object]]],
+    sql_actuals: dict[str, dict[str, float]],
+    actual_year: int,
+    actual_month: int,
+    exchange_rates: dict[str, float],
+) -> dict[str, dict[str, dict[str, object]]]:
+    for region_payload in payload.values():
+        for store_code, store in region_payload.items():
+            country = str(store["country"])
+            monthly_sales: dict[str, float] = dict(store.get("monthlySales", {}))
+            sql_months = sql_actuals.get(store_code, {})
+
+            for period_key, raw_amount in sql_months.items():
+                year = int(period_key[:4])
+                month = int(period_key[5:7])
+                use_sql = year < actual_year or (year == actual_year and month <= actual_month)
+                if not use_sql:
+                    continue
+                monthly_sales[period_key] = round(convert_amount(raw_amount, country, period_key, exchange_rates), 2)
+
+            annual_totals: dict[str, float] = defaultdict(float)
+            for period_key, amount in monthly_sales.items():
+                annual_totals[period_key[:4]] += float(amount or 0.0)
+
+            store["monthlySales"] = dict(sorted(monthly_sales.items()))
+            store["annualTotals"] = {year: round(total, 2) for year, total in sorted(annual_totals.items())}
+
+    return payload
+
+
+def main() -> None:
+    actual_year, actual_month = load_actual_period()
+    exchange_rates = load_tw_exchange_rates()
+    payload = load_excel_baseline(exchange_rates)
+    store_dimensions = flatten_store_dimensions(payload)
+    sql_actuals = fetch_sql_actuals(store_dimensions, actual_year, actual_month)
+    merged = merge_sources(payload, sql_actuals, actual_year, actual_month, exchange_rates)
+    print(json.dumps(merged, ensure_ascii=False))
 
 
 if __name__ == "__main__":
     main()
+

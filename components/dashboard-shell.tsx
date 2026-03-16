@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 type MonthlyPoint = {
@@ -45,6 +45,8 @@ type StoreMonthlySales = Record<
 
 type CellMetric = {
   sales: number | null;
+  previousSales: number | null;
+  twoYearSales: number | null;
   yoyPrev: number | null;
   yoyTwo: number | null;
 };
@@ -111,6 +113,12 @@ const REGION_LABELS: Record<string, string> = {
   TW: "TW",
 };
 
+const BRAND_LABELS: Record<string, string> = {
+  ALL: "전체",
+  M: "MLB",
+  X: "DX",
+};
+
 const DEFAULT_SELECTED_MONTH = 2;
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => index + 1);
 
@@ -129,6 +137,7 @@ export function DashboardShell({
   const initialRegionKey = regionKeys[0] ?? "HKMC";
   const initialPeriod = parseActualPeriod(initialActualPeriod, DEFAULT_SELECTED_MONTH);
   const [regionKey, setRegionKey] = useState(initialRegionKey);
+  const [selectedBrand, setSelectedBrand] = useState("M");
   const [selectedMonth, setSelectedMonth] = useState(initialPeriod.month);
   const [expandedChannels, setExpandedChannels] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<ViewMode>("yoy");
@@ -140,6 +149,29 @@ export function DashboardShell({
   const storeRows = region?.storeYoyMultiYear ?? [];
   const regionSales = storeMonthlySales[regionKey] ?? {};
   const countryLabel = REGION_LABELS[regionKey] ?? regionKey;
+  const availableBrands = useMemo(() => {
+    const brands = Array.from(
+      new Set(
+        Object.values(regionSales)
+          .map((store) => String(store.brand || ""))
+          .filter(Boolean),
+      ),
+    ).sort();
+    const orderedBrands = brands.includes("M")
+      ? ["M", ...brands.filter((brand) => brand !== "M")]
+      : brands;
+    return ["ALL", ...orderedBrands];
+  }, [regionSales]);
+
+  useEffect(() => {
+    if (availableBrands.length === 0) return;
+    if (!availableBrands.includes(selectedBrand)) {
+      setSelectedBrand(availableBrands.includes("M") ? "M" : availableBrands[0]);
+      setExpandedChannels({});
+      setSortMonth(null);
+      setSortDirection("desc");
+    }
+  }, [availableBrands, selectedBrand]);
 
   const periodOptions = useMemo(() => {
     return MONTH_OPTIONS.map((month) => ({
@@ -177,6 +209,7 @@ export function DashboardShell({
       .map((store) => {
         const salesSource = regionSales[store.storeCode];
         if (!salesSource) return null;
+        if (selectedBrand !== "ALL" && salesSource.brand !== selectedBrand) return null;
 
         const months = MONTH_OPTIONS.map((month) => ({
           month,
@@ -204,7 +237,7 @@ export function DashboardShell({
         if (a.channel !== b.channel) return a.channel.localeCompare(b.channel);
         return a.storeName.localeCompare(b.storeName);
       });
-  }, [countryLabel, latestYear, regionKey, regionSales, selectedMonth, storeRows]);
+  }, [countryLabel, latestYear, regionKey, regionSales, selectedBrand, selectedMonth, storeRows]);
 
   const channelKeys = useMemo(() => Array.from(new Set(tableRows.map((row) => row.toggleKey).filter((value): value is string => Boolean(value)))), [tableRows]);
 
@@ -295,6 +328,12 @@ export function DashboardShell({
   };
 
   const storeOnlyRows = tableRows;
+  const overallCardMetric = useMemo(() => aggregateMetricCells(storeOnlyRows.map((row) => row.ytd)), [storeOnlyRows]);
+  const overallCardTitle = useMemo(() => {
+    if (regionKey === "HKMC") return "홍콩마카오 합계";
+    if (regionKey === "TW") return "대만 전체";
+    return `${countryLabel} 전체`;
+  }, [countryLabel, regionKey]);
 
   const channelHighlights = useMemo(() => {
     const grouped = new Map<string, TableRow[]>();
@@ -306,23 +345,28 @@ export function DashboardShell({
     }
 
     return Array.from(grouped.entries()).map(([channel, rows]) => {
-      const topYoy = rows.reduce<{ storeName: string; value: number } | null>((best, row) => {
+      const channelMetric = aggregateMetricCells(rows.map((row) => row.ytd));
+      const topYoy = rows.reduce<{ storeName: string; value: number; yoyTwo: number | null } | null>((best, row) => {
         const value = row.ytd.yoyPrev;
         if (value == null) return best;
-        if (!best || value > best.value) return { storeName: row.storeName, value };
+        if (!best || value > best.value) {
+          return { storeName: row.storeName, value, yoyTwo: row.ytd.yoyTwo };
+        }
         return best;
       }, null);
 
-      const topSales = rows.reduce<{ storeName: string; value: number } | null>((best, row) => {
+      const topSales = rows.reduce<{ storeName: string; value: number; yoyPrev: number | null; yoyTwo: number | null } | null>((best, row) => {
         const value = row.ytd.sales;
         if (value == null) return best;
-        if (!best || value > best.value) return { storeName: row.storeName, value };
+        if (!best || value > best.value) {
+          return { storeName: row.storeName, value, yoyPrev: row.ytd.yoyPrev, yoyTwo: row.ytd.yoyTwo };
+        }
         return best;
       }, null);
 
-      return { channel, topYoy, topSales };
-    }).sort((a, b) => a.channel.localeCompare(b.channel));
-  }, [selectedMonth, storeOnlyRows]);
+      return { channel, channelMetric, topYoy, topSales };
+    }).sort((a, b) => getChannelCardOrder(a.channel) - getChannelCardOrder(b.channel) || a.channel.localeCompare(b.channel));
+  }, [storeOnlyRows]);
 
   if (!region) {
     return (
@@ -359,6 +403,28 @@ export function DashboardShell({
                     {REGION_LABELS[key] ?? key}
                   </ToggleButton>
                 ))}
+                <div className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-3 shadow-sm">
+                  <label htmlFor="brand-select" className="text-sm font-semibold text-stone-600">
+                    Brand
+                  </label>
+                  <select
+                    id="brand-select"
+                    value={selectedBrand}
+                    onChange={(event) => {
+                      setSelectedBrand(event.target.value);
+                      setExpandedChannels({});
+                      setSortMonth(null);
+                      setSortDirection("desc");
+                    }}
+                    className="bg-transparent text-base font-semibold text-stone-900 outline-none"
+                  >
+                    {availableBrands.map((brand) => (
+                      <option key={brand} value={brand}>
+                        {BRAND_LABELS[brand] ?? brand}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
             <div className="min-w-[460px] rounded-[28px] border border-stone-200/70 bg-stone-50/90 p-6 shadow-inner shadow-stone-900/5 md:min-w-[520px]">
@@ -394,16 +460,26 @@ export function DashboardShell({
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <OverallSummaryCard
+            title={overallCardTitle}
+            basis={formatCardBasis(selectedMonth)}
+            salesValue={formatSalesCell(overallCardMetric.sales)}
+            yoyValue={overallCardMetric.yoyPrev}
+            yoyTwoValue={overallCardMetric.yoyTwo}
+          />
           {channelHighlights.map((item) => (
             <ChannelHighlightCard
               key={item.channel}
               channel={item.channel}
-              basis={`${selectedMonth}월 ${TEXT.ytdBasisSuffix}`}
+              basis={formatCardBasis(selectedMonth)}
+              summaryValue={renderCardComparison(item.channel, item.channelMetric.yoyPrev, item.channelMetric.yoyTwo)}
               salesLabel={TEXT.channelTopSales}
               yoyLabel={TEXT.channelTopYoy}
-              salesValue={item.topSales ? `${item.topSales.storeName} · ${formatSalesCell(item.topSales.value)} K HKD` : TEXT.noData}
-              yoyValue={item.topYoy ? `${item.topYoy.storeName} · ${formatYoyRate(item.topYoy.value)}` : TEXT.noData}
+              salesValue={item.topSales ? `${item.topSales.storeName} / ${formatSalesCell(item.topSales.value)} K HKD` : TEXT.noData}
+              salesDetail={item.topSales ? renderMetricComparison(item.topSales.yoyPrev, item.topSales.yoyTwo) : null}
+              yoyValue={item.topYoy ? `${item.topYoy.storeName} / ${formatYoyRate(item.topYoy.value)}` : TEXT.noData}
+              yoyDetail={item.topYoy ? renderMetricComparison(item.topYoy.value, item.topYoy.yoyTwo) : null}
               yoyTone={item.topYoy?.value}
             />
           ))}
@@ -538,6 +614,8 @@ function createMetricCell(source: Record<string, number>, latestYear: number, mo
 
   return {
     sales,
+    previousSales: previous,
+    twoYearSales: twoYears,
     yoyPrev: sales != null && previous ? sales / previous - 1 : null,
     yoyTwo: sales != null && twoYears ? sales / twoYears - 1 : null,
   };
@@ -550,6 +628,8 @@ function createYtdMetric(source: Record<string, number>, latestYear: number, sel
 
   return {
     sales: current,
+    previousSales: previous,
+    twoYearSales: twoYears,
     yoyPrev: current != null && previous ? current / previous - 1 : null,
     yoyTwo: current != null && twoYears ? current / twoYears - 1 : null,
   };
@@ -562,6 +642,8 @@ function createAnnualMetric(source: Record<string, number>, latestYear: number):
 
   return {
     sales,
+    previousSales: previous,
+    twoYearSales: twoYears,
     yoyPrev: sales != null && previous ? sales / previous - 1 : null,
     yoyTwo: sales != null && twoYears ? sales / twoYears - 1 : null,
   };
@@ -613,19 +695,18 @@ function summaryRowClass(kind: RowKind) {
 
 function aggregateMetricCells(metrics: CellMetric[]): CellMetric {
   const sales = metrics.reduce((sum, metric) => sum + (metric.sales ?? 0), 0);
-  const previousBase = metrics.reduce((sum, metric) => {
-    if (metric.sales == null || metric.yoyPrev == null || metric.yoyPrev === -1) return sum;
-    return sum + metric.sales / (1 + metric.yoyPrev);
-  }, 0);
-  const twoYearBase = metrics.reduce((sum, metric) => {
-    if (metric.sales == null || metric.yoyTwo == null || metric.yoyTwo === -1) return sum;
-    return sum + metric.sales / (1 + metric.yoyTwo);
-  }, 0);
+  const previousSales = metrics.reduce((sum, metric) => sum + (metric.previousSales ?? 0), 0);
+  const twoYearSales = metrics.reduce((sum, metric) => sum + (metric.twoYearSales ?? 0), 0);
+  const hasSales = metrics.some((metric) => metric.sales != null);
+  const hasPreviousSales = metrics.some((metric) => metric.previousSales != null);
+  const hasTwoYearSales = metrics.some((metric) => metric.twoYearSales != null);
 
   return {
-    sales: sales || null,
-    yoyPrev: previousBase ? sales / previousBase - 1 : null,
-    yoyTwo: twoYearBase ? sales / twoYearBase - 1 : null,
+    sales: hasSales ? sales : null,
+    previousSales: hasPreviousSales ? previousSales : null,
+    twoYearSales: hasTwoYearSales ? twoYearSales : null,
+    yoyPrev: previousSales ? sales / previousSales - 1 : null,
+    yoyTwo: twoYearSales ? sales / twoYearSales - 1 : null,
   };
 }
 
@@ -657,35 +738,79 @@ function ToggleButton({ children, active, onClick }: { children: ReactNode; acti
   );
 }
 
+function OverallSummaryCard({
+  title,
+  basis,
+  salesValue,
+  yoyValue,
+  yoyTwoValue,
+}: {
+  title: string;
+  basis: string;
+  salesValue: string;
+  yoyValue: number | null;
+  yoyTwoValue: number | null;
+}) {
+  return (
+    <article className="rounded-[24px] border border-white/55 bg-white/85 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
+      <p className="text-sm text-stone-500">{title}</p>
+      <p className="mt-1 text-xs text-stone-400">{basis}</p>
+      <div className="mt-3 space-y-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.16em] text-stone-400">실판매출</p>
+          <p className="mt-1 text-base font-semibold text-stone-900">{salesValue} K HKD</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-[0.16em] text-stone-400">YOY</p>
+          <p className={`mt-1 text-base font-semibold ${valueTone(yoyValue).replace("text-stone-400", "text-stone-900")}`}>{formatYoyRate(yoyValue)}</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-[0.16em] text-stone-400">전전년비</p>
+          <p className={`mt-1 text-base font-semibold ${valueTone(yoyTwoValue).replace("text-stone-400", "text-stone-900")}`}>{formatYoyRate(yoyTwoValue)}</p>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function ChannelHighlightCard({
   channel,
   basis,
+  summaryValue,
   salesLabel,
   yoyLabel,
   salesValue,
+  salesDetail,
   yoyValue,
+  yoyDetail,
   yoyTone,
 }: {
   channel: string;
   basis: string;
+  summaryValue: ReactNode | null;
   salesLabel: string;
   yoyLabel: string;
   salesValue: string;
+  salesDetail?: ReactNode;
   yoyValue: string;
+  yoyDetail?: ReactNode;
   yoyTone?: number | null;
 }) {
   return (
     <article className="rounded-[24px] border border-white/55 bg-white/85 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
       <p className="text-sm text-stone-500">{channel}</p>
       <p className="mt-1 text-xs text-stone-400">{basis}</p>
+      {summaryValue ? <p className="mt-1 text-[12px] font-semibold text-stone-600">{summaryValue}</p> : null}
       <div className="mt-3 space-y-3">
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-stone-400">{salesLabel}</p>
           <p className="mt-1 text-base font-semibold text-stone-900">{salesValue}</p>
+          {salesDetail ? <p className="mt-1 text-[12px]">{salesDetail}</p> : null}
         </div>
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-stone-400">{yoyLabel}</p>
           <p className={`mt-1 text-base font-semibold ${valueTone(yoyTone ?? null).replace("text-stone-400", "text-stone-900")}`}>{yoyValue}</p>
+          {yoyDetail ? <p className="mt-1 text-[12px]">{yoyDetail}</p> : null}
         </div>
       </div>
     </article>
@@ -756,6 +881,14 @@ function getChannelHighlightLabel(row: TableRow) {
   return `${row.country} ${row.channel}`.trim();
 }
 
+function getChannelCardOrder(channel: string) {
+  if (channel === "홍콩 리테일") return 0;
+  if (channel === "홍콩 아울렛") return 1;
+  if (channel === "홍콩 온라인") return 2;
+  if (channel === "마카오") return 3;
+  return 99;
+}
+
 function getCountryOrder(regionKey: string, groups: Map<string, TableRow[]>) {
   if (regionKey === "HKMC") return ["홍콩", "마카오"];
   return Array.from(groups.keys());
@@ -798,6 +931,56 @@ function formatYoyRate(value: number | null | undefined) {
 function formatSalesCell(value: number | null | undefined) {
   if (value == null || Number.isNaN(value)) return "-";
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(value));
+}
+
+function formatMetricComparison(yoyPrev: number | null | undefined, yoyTwo: number | null | undefined) {
+  if ((yoyPrev == null || Number.isNaN(yoyPrev)) && (yoyTwo == null || Number.isNaN(yoyTwo))) {
+    return null;
+  }
+
+  const parts: string[] = [];
+  if (yoyPrev != null && !Number.isNaN(yoyPrev)) {
+    parts.push(`YOY ${formatYoyRate(yoyPrev)}`);
+  }
+  if (yoyTwo != null && !Number.isNaN(yoyTwo)) {
+    parts.push(`전전년비 ${formatYoyRate(yoyTwo)}`);
+  }
+  return parts.join(", ");
+}
+
+function renderMetricComparison(yoyPrev: number | null | undefined, yoyTwo: number | null | undefined): ReactNode | null {
+  if ((yoyPrev == null || Number.isNaN(yoyPrev)) && (yoyTwo == null || Number.isNaN(yoyTwo))) {
+    return null;
+  }
+
+  return (
+    <>
+      {yoyPrev != null && !Number.isNaN(yoyPrev) ? (
+        <span className={`font-semibold ${valueTone(yoyPrev)}`}>YOY {formatYoyRate(yoyPrev)}</span>
+      ) : null}
+      {yoyPrev != null && !Number.isNaN(yoyPrev) && yoyTwo != null && !Number.isNaN(yoyTwo) ? <span className="text-stone-400">, </span> : null}
+      {yoyTwo != null && !Number.isNaN(yoyTwo) ? (
+        <span className={`font-semibold ${valueTone(yoyTwo)}`}>전전년비 {formatYoyRate(yoyTwo)}</span>
+      ) : null}
+    </>
+  );
+}
+
+function renderCardComparison(channel: string, yoyPrev: number | null | undefined, yoyTwo: number | null | undefined): ReactNode | null {
+  const metricNode = renderMetricComparison(yoyPrev, yoyTwo);
+  if (!metricNode) return null;
+
+  return (
+    <>
+      <span className="text-stone-600">({channel} </span>
+      {metricNode}
+      <span className="text-stone-600">)</span>
+    </>
+  );
+}
+
+function formatCardBasis(selectedMonth: number) {
+  return `${selectedMonth}월 누적 기준`;
 }
 
 function formatTimestamp(value: string) {
