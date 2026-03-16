@@ -375,6 +375,64 @@ export function DashboardShell({
     }).sort((a, b) => getChannelCardOrder(a.channel) - getChannelCardOrder(b.channel) || a.channel.localeCompare(b.channel));
   }, [cardMetricMode, getCardMetric, selectedMonth, storeOnlyRows]);
 
+  const trendSummary = useMemo(() => {
+    const strongestGrowth = channelHighlights
+      .filter((item) => item.channelMetric.yoyPrev != null)
+      .sort((a, b) => (b.channelMetric.yoyPrev ?? Number.NEGATIVE_INFINITY) - (a.channelMetric.yoyPrev ?? Number.NEGATIVE_INFINITY))[0];
+    const strongestRecovery = channelHighlights
+      .filter((item) => item.channelMetric.yoyTwo != null)
+      .sort((a, b) => (b.channelMetric.yoyTwo ?? Number.NEGATIVE_INFINITY) - (a.channelMetric.yoyTwo ?? Number.NEGATIVE_INFINITY))[0];
+    const softestRecovery = channelHighlights
+      .filter((item) => item.channelMetric.yoyTwo != null)
+      .sort((a, b) => (a.channelMetric.yoyTwo ?? Number.POSITIVE_INFINITY) - (b.channelMetric.yoyTwo ?? Number.POSITIVE_INFINITY))[0];
+
+    const basisLabel = cardMetricMode === "month" ? `${selectedMonth}월 당월` : `${selectedMonth}월 누적`;
+    const lines: ReactNode[] = [
+      <>
+        <strong className="font-semibold text-stone-900">{basisLabel}</strong> 기준{" "}
+        <strong className="font-semibold text-stone-900">{overallCardTitle}</strong> 실판매출은{" "}
+        {renderTrendBadge(`${formatSalesCell(overallCardMetric.sales)} K HKD`, "stone")}이며,{" "}
+        {renderTrendMetricBadge("YOY", overallCardMetric.yoyPrev)}{" "}
+        {renderTrendMetricBadge("전전년비", overallCardMetric.yoyTwo)} 흐름입니다.
+      </>,
+    ];
+
+    if (strongestGrowth) {
+      lines.push(
+        <>
+          성장 탄력은 <strong className="font-semibold text-stone-900">{strongestGrowth.channel}</strong>이 가장 강하며{" "}
+          {renderTrendMetricBadge("YOY", strongestGrowth.channelMetric.yoyPrev)}를 기록하고 있습니다.
+          {strongestGrowth.topSales ? (
+            <>
+              {" "}대표 매출 점포는 <strong className="font-semibold text-stone-900">{strongestGrowth.topSales.storeName}</strong>로{" "}
+              {renderTrendBadge(`${formatSalesCell(strongestGrowth.topSales.value)} K HKD`, "stone")}입니다.
+            </>
+          ) : null}
+        </>,
+      );
+    }
+
+    if (strongestRecovery) {
+      lines.push(
+        <>
+          전전년비 기준 회복세는 <strong className="font-semibold text-stone-900">{strongestRecovery.channel}</strong>이 가장 두드러지며{" "}
+          {renderTrendMetricBadge("전전년비", strongestRecovery.channelMetric.yoyTwo)} 수준입니다.
+        </>,
+      );
+    }
+
+    if (softestRecovery && softestRecovery.channelMetric.yoyTwo != null && softestRecovery.channelMetric.yoyTwo < 0) {
+      lines.push(
+        <>
+          반면 <strong className="font-semibold text-stone-900">{softestRecovery.channel}</strong>{topicParticle(softestRecovery.channel)}{" "}
+          {renderTrendMetricBadge("전전년비", softestRecovery.channelMetric.yoyTwo)}로, 추가 회복 여지가 남아 있습니다.
+        </>,
+      );
+    }
+
+    return lines.slice(0, 4);
+  }, [cardMetricMode, channelHighlights, overallCardMetric.sales, overallCardMetric.yoyPrev, overallCardMetric.yoyTwo, overallCardTitle, selectedMonth]);
+
   if (!region) {
     return (
       <main className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-4 py-10">
@@ -494,6 +552,20 @@ export function DashboardShell({
           ))}
         </section>
 
+        <section className="rounded-[24px] border border-white/55 bg-white/80 p-5 shadow-[0_16px_36px_rgba(65,46,24,0.08)]">
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Trend Summary</p>
+              <h3 className="mt-2 text-xl font-semibold text-stone-900">현재 현황과 추세</h3>
+            </div>
+            <div className="space-y-2 text-sm leading-7 text-stone-600">
+              {trendSummary.map((line, index) => (
+                <p key={index}>{line}</p>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="rounded-[28px] border border-white/55 bg-white/84 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)] md:p-5">
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div className="flex flex-wrap items-end gap-3">
@@ -547,7 +619,7 @@ export function DashboardShell({
                           </button>
                         </th>
                         {month === selectedMonth ? (
-                          <th className="w-[90px] bg-emerald-200/90 px-2 py-3 text-center font-semibold text-emerald-950">YTD</th>
+                          <th className="w-[90px] bg-stone-300/90 px-2 py-3 text-center font-semibold text-stone-900">YTD</th>
                         ) : null}
                       </Fragment>
                     ))}
@@ -591,7 +663,7 @@ export function DashboardShell({
                                 <MetricCell metric={month} emphasize={isSummaryRow} viewMode={viewMode} />
                               </td>
                               {month.month === selectedMonth ? (
-                                <td className="bg-emerald-200/60 px-2 py-2 align-top">
+                                <td className="bg-stone-200/80 px-2 py-2 align-top">
                                   <MetricCell metric={row.ytd} emphasize viewMode={viewMode} />
                                 </td>
                               ) : null}
@@ -1004,6 +1076,27 @@ function renderMetricComparison(yoyPrev: number | null | undefined, yoyTwo: numb
 
 function renderCardComparison(channel: string, yoyPrev: number | null | undefined, yoyTwo: number | null | undefined): ReactNode | null {
   return renderMetricComparison(yoyPrev, yoyTwo);
+}
+
+function renderTrendBadge(label: string, tone: "stone" | "metric" = "metric", value?: number | null) {
+  if (tone === "stone") {
+    return <span className="inline-flex rounded-full bg-stone-900 px-2.5 py-1 text-[12px] font-semibold text-white">{label}</span>;
+  }
+  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold ${pillTone(value)}`}>{label}</span>;
+}
+
+function renderTrendMetricBadge(label: string, value: number | null | undefined) {
+  return renderTrendBadge(`${label} ${formatYoyRate(value)}`, "metric", value);
+}
+
+function topicParticle(text: string) {
+  const lastChar = text.charCodeAt(text.length - 1);
+  const hangulBase = 0xac00;
+  const hangulEnd = 0xd7a3;
+  if (Number.isNaN(lastChar) || lastChar < hangulBase || lastChar > hangulEnd) {
+    return "은";
+  }
+  return (lastChar - hangulBase) % 28 === 0 ? "는" : "은";
 }
 
 function formatCardBasis(selectedMonth: number, mode: CardMetricMode) {
