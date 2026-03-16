@@ -54,13 +54,14 @@ def load_tw_exchange_rates() -> dict[str, float]:
     return rates
 
 
-def yymm_from_period_key(period_key: str) -> str:
+def yymm_from_period_key(period_key: str, reference_year: int | None = None) -> str:
     year, month = period_key.split("-")
-    return f"{year[-2:]}{month}"
+    target_year = str(reference_year)[-2:] if reference_year is not None else year[-2:]
+    return f"{target_year}{month}"
 
 
-def resolve_tw_rate(period_key: str, exchange_rates: dict[str, float]) -> float:
-    yymm = yymm_from_period_key(period_key)
+def resolve_tw_rate(period_key: str, exchange_rates: dict[str, float], reference_year: int | None = None) -> float:
+    yymm = yymm_from_period_key(period_key, reference_year=reference_year)
     if yymm in exchange_rates:
         return exchange_rates[yymm]
 
@@ -74,13 +75,19 @@ def resolve_tw_rate(period_key: str, exchange_rates: dict[str, float]) -> float:
     return exchange_rates[available[0]]
 
 
-def convert_amount(amount: float, country: str, period_key: str, exchange_rates: dict[str, float]) -> float:
+def convert_amount(
+    amount: float,
+    country: str,
+    period_key: str,
+    exchange_rates: dict[str, float],
+    reference_year: int | None = None,
+) -> float:
     if country != "TW":
         return amount
-    return amount * resolve_tw_rate(period_key, exchange_rates)
+    return amount * resolve_tw_rate(period_key, exchange_rates, reference_year=reference_year)
 
 
-def load_excel_baseline(exchange_rates: dict[str, float]) -> dict[str, dict[str, dict[str, object]]]:
+def load_excel_baseline(exchange_rates: dict[str, float], reference_year: int, actual_month: int) -> dict[str, dict[str, dict[str, object]]]:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     try:
@@ -117,7 +124,17 @@ def load_excel_baseline(exchange_rates: dict[str, float]) -> dict[str, dict[str,
         )
         period_key = str(row["period_key"])
         raw_amount = float(row["amount"] or 0.0)
-        store["monthlySales"][period_key] = round(convert_amount(raw_amount, country, period_key, exchange_rates), 2)
+        period_year = int(period_key[:4])
+        period_month = int(period_key[5:7])
+        use_raw_amount = country == "TW" and period_year == reference_year and period_month > actual_month
+        converted_amount = raw_amount if use_raw_amount else convert_amount(
+            raw_amount,
+            country,
+            period_key,
+            exchange_rates,
+            reference_year=reference_year,
+        )
+        store["monthlySales"][period_key] = round(converted_amount, 2)
     return payload
 
 
@@ -165,6 +182,7 @@ def merge_sources(
     actual_year: int,
     actual_month: int,
     exchange_rates: dict[str, float],
+    reference_year: int,
 ) -> dict[str, dict[str, dict[str, object]]]:
     for region_payload in payload.values():
         for store_code, store in region_payload.items():
@@ -178,7 +196,7 @@ def merge_sources(
                 use_sql = year < actual_year or (year == actual_year and month <= actual_month)
                 if not use_sql:
                     continue
-                monthly_sales[period_key] = round(convert_amount(raw_amount, country, period_key, exchange_rates), 2)
+                monthly_sales[period_key] = round(convert_amount(raw_amount, country, period_key, exchange_rates, reference_year=reference_year), 2)
 
             annual_totals: dict[str, float] = defaultdict(float)
             for period_key, amount in monthly_sales.items():
@@ -193,10 +211,10 @@ def merge_sources(
 def main() -> None:
     actual_year, actual_month = load_actual_period()
     exchange_rates = load_tw_exchange_rates()
-    payload = load_excel_baseline(exchange_rates)
+    payload = load_excel_baseline(exchange_rates, reference_year=actual_year, actual_month=actual_month)
     store_dimensions = flatten_store_dimensions(payload)
     sql_actuals = fetch_sql_actuals(store_dimensions, actual_year, actual_month)
-    merged = merge_sources(payload, sql_actuals, actual_year, actual_month, exchange_rates)
+    merged = merge_sources(payload, sql_actuals, actual_year, actual_month, exchange_rates, reference_year=actual_year)
     print(json.dumps(merged, ensure_ascii=False))
 
 
