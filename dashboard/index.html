@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HKMC/TW 스토어 대시보드</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Store Performance Compass</p>
+        <h1 id="page-title">HKMC/TW 스토어 대시보드</h1>
+        <p class="hero-copy">실매출, 할인율, 직접이익 흐름을 한 화면에서 보고, 매장별 성과와 BEP 상태를 빠르게 확인할 수 있도록 구성했습니다.</p>
+      </div>
+      <div class="hero-panel">
+        <div class="toggle-group" id="region-toggle"></div>
+        <div class="toggle-group secondary" id="year-toggle"></div>
+        <p class="stamp">최신 기준월 <span id="latest-period"></span></p>
+      </div>
+    </header>
+
+    <section class="summary-card">
+      <div>
+        <p class="section-kicker">Executive View</p>
+        <h2 id="region-heading"></h2>
+      </div>
+      <p id="region-summary"></p>
+    </section>
+
+    <section class="kpi-grid" id="kpi-grid"></section>
+
+    <section class="content-grid">
+      <article class="panel wide-panel">
+        <div class="panel-header">
+          <div>
+            <p class="section-kicker">Trend Lens</p>
+            <h3>연도별 추이 비교</h3>
+          </div>
+          <div class="toggle-group tertiary" id="metric-toggle"></div>
+        </div>
+        <div id="trend-chart" class="chart-card"></div>
+      </article>
+
+      <article class="panel forecast-panel">
+        <div class="panel-header">
+          <div>
+            <p class="section-kicker">Forward View</p>
+            <h3>향후 3개월 전망</h3>
+          </div>
+        </div>
+        <div id="forecast-chart" class="chart-card tall"></div>
+        <div id="forecast-summary" class="forecast-summary"></div>
+      </article>
+    </section>
+
+    <section class="panel bep-panel">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">BEP Lens</p>
+          <h3 id="bep-title">매장별 BEP 진단</h3>
+        </div>
+      </div>
+      <div class="note-card">
+        <div class="note-head">매장별 BEP 해설</div>
+        <p id="bep-description"></p>
+        <p id="bep-note" class="sub-note"></p>
+      </div>
+      <div class="summary-banner" id="bep-summary"></div>
+      <div class="table-wrap">
+        <table>
+          <thead id="bep-table-head"></thead>
+          <tbody id="bep-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel table-panel">
+      <div class="panel-header">
+        <div>
+          <p class="section-kicker">Store Drilldown</p>
+          <h3 id="store-table-title">매장 4개년 월별 YOY</h3>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead id="store-table-head"></thead>
+          <tbody id="store-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal hidden" id="metric-modal" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <button class="close-button" id="modal-close" type="button">닫기</button>
+      <p class="section-kicker" id="modal-kicker"></p>
+      <h3 id="modal-title"></h3>
+      <p id="modal-copy" class="modal-copy"></p>
+      <div id="modal-chart" class="chart-card tall"></div>
+    </div>
+  </div>
+
+  <script src="./data.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
