@@ -353,6 +353,7 @@ export function DashboardShell({
     [cardMetricMode, selectedMonth],
   );
   const overallCardMetric = useMemo(() => aggregateMetricCells(storeOnlyRows.map((row) => getCardMetric(row))), [getCardMetric, storeOnlyRows]);
+  const overallCardDisplayMetric = useMemo(() => getDisplayMetric(overallCardMetric, tableBasisMode), [overallCardMetric, tableBasisMode]);
   const overallCardTitle = useMemo(() => {
     if (regionKey === "HKMC") return "홍콩마카오 합계";
     if (regionKey === "TW") return "대만 전체";
@@ -513,17 +514,18 @@ export function DashboardShell({
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1860px] px-4 py-5 md:px-6 md:py-6">
+    <main className="mx-auto w-full max-w-[1860px] px-4 pt-0 pb-5 md:px-6 md:pt-0 md:pb-6">
       <div className="space-y-4">
-        <section className="rounded-[28px] border border-white/55 bg-white/82 p-5 shadow-[0_16px_40px_rgba(65,46,24,0.10)] md:p-6">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+        <section className="sticky top-0 z-30 rounded-[28px] border border-white/70 bg-white/88 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)] backdrop-blur-md md:p-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-stone-500">{TEXT.storeDrilldown}</p>
-              <h1 className="mt-2 font-serif text-3xl leading-none tracking-tight text-stone-900 md:text-5xl">{TEXT.title}</h1>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-600">{TEXT.intro}</p>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
+              <h1 className="mt-1 font-serif text-[1.45rem] font-medium leading-none tracking-tight text-stone-900 md:text-[2.1rem]">{TEXT.title}</h1>
+              <p className="mt-2 max-w-3xl text-[13px] leading-6 text-stone-600">{TEXT.intro}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2.5">
                 {regionKeys.map((key) => (
                   <ToggleButton
+                    compact
                     key={key}
                     active={regionKey === key}
                     onClick={() => {
@@ -537,7 +539,7 @@ export function DashboardShell({
                     {REGION_LABELS[key] ?? key}
                   </ToggleButton>
                 ))}
-                <div className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-3 shadow-sm">
+                <div className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-3.5 py-2.5 shadow-sm">
                   <label htmlFor="brand-select" className="text-sm font-semibold text-stone-600">
                     Brand
                   </label>
@@ -550,7 +552,7 @@ export function DashboardShell({
                       setSortMonth(null);
                       setSortDirection("desc");
                     }}
-                    className="bg-transparent text-base font-semibold text-stone-900 outline-none"
+                    className="bg-transparent text-sm font-semibold text-stone-900 outline-none"
                   >
                     {availableBrands.map((brand) => (
                       <option key={brand} value={brand}>
@@ -559,12 +561,44 @@ export function DashboardShell({
                     ))}
                   </select>
                 </div>
+                <div className="inline-flex rounded-full border border-stone-300 bg-white p-1 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setCardMetricMode("ytd")}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${cardMetricMode === "ytd" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+                  >
+                    누적
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCardMetricMode("month")}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${cardMetricMode === "month" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+                  >
+                    당월
+                  </button>
+                </div>
+                <div className="inline-flex rounded-full border border-stone-300 bg-white p-1 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setTableBasisMode("sales")}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "sales" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+                  >
+                    실판
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTableBasisMode("perStore")}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "perStore" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+                  >
+                    점당
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="min-w-[460px] rounded-[28px] border border-stone-200/70 bg-stone-50/90 p-6 shadow-inner shadow-stone-900/5 md:min-w-[520px]">
-              <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-[420px] rounded-[28px] border border-stone-200/70 bg-stone-50/90 p-5 shadow-inner shadow-stone-900/5 md:min-w-[500px]">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-4">
-                  <label htmlFor="period-select" className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">
+                  <label htmlFor="period-select" className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
                     {TEXT.period}
                   </label>
                 <select
@@ -574,7 +608,7 @@ export function DashboardShell({
                   onChange={(event) => {
                     void handleActualPeriodChange(Number(event.target.value));
                   }}
-                  className={`rounded-full border border-stone-300 bg-white px-5 py-3 text-base font-medium text-stone-800 outline-none transition focus:border-emerald-600 ${canEditPeriod ? "" : "cursor-not-allowed bg-stone-100 text-stone-500"}`}
+                  className={`rounded-full border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-800 outline-none transition focus:border-emerald-600 ${canEditPeriod ? "" : "cursor-not-allowed bg-stone-100 text-stone-500"}`}
                 >
                   {periodOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -586,12 +620,12 @@ export function DashboardShell({
                 <button
                   type="button"
                   onClick={() => setShowDataStructureModal(true)}
-                  className="rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-500 hover:bg-stone-100"
+                  className="rounded-full border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-500 hover:bg-stone-100"
                 >
                   데이터구조
                 </button>
               </div>
-              <div className="mt-5 text-base text-stone-500">
+              <div className="mt-4 text-sm text-stone-500">
                 <p>
                   {TEXT.baseYear} <span className="font-semibold text-stone-800">{latestYear}</span>
                 </p>
@@ -605,11 +639,10 @@ export function DashboardShell({
           <OverallSummaryCard
             title={overallCardTitle}
             basis={formatCardBasis(selectedMonth, cardMetricMode)}
-            mode={cardMetricMode}
-            onModeChange={setCardMetricMode}
-            salesValue={formatSalesCell(overallCardMetric.sales)}
-            yoyValue={overallCardMetric.yoyPrev}
-            yoyTwoValue={overallCardMetric.yoyTwo}
+            salesLabel={tableBasisMode === "perStore" ? "점당매출" : "실판매출"}
+            salesValue={formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)}
+            yoyValue={overallCardDisplayMetric.yoyPrev}
+            yoyTwoValue={overallCardDisplayMetric.yoyTwo}
           />
           {channelHighlights.map((item) => (
             <ChannelHighlightCard
@@ -655,12 +688,6 @@ export function DashboardShell({
                   onClick={() => setViewMode(viewMode === "yoy" ? "sales" : "yoy")}
                 >
                   {viewMode === "yoy" ? TEXT.viewSales : TEXT.viewYoy}
-                </ToggleButton>
-                <ToggleButton
-                  active={tableBasisMode === "perStore"}
-                  onClick={() => setTableBasisMode(tableBasisMode === "sales" ? "perStore" : "sales")}
-                >
-                  {tableBasisMode === "sales" ? TEXT.perStoreBasis : TEXT.salesBasis}
                 </ToggleButton>
                 <ToggleButton active={allExpanded} onClick={toggleAllChannels}>
                   {allExpanded ? TEXT.collapseAll : TEXT.expandAll}
@@ -965,12 +992,12 @@ function sumPeriods(source: Record<string, number>, year: number, selectedMonth:
   return hasValue ? total : null;
 }
 
-function ToggleButton({ children, active, onClick }: { children: ReactNode; active: boolean; onClick: () => void }) {
+function ToggleButton({ children, active, onClick, compact = false }: { children: ReactNode; active: boolean; onClick: () => void; compact?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-6 py-3 text-base font-semibold tracking-[0.01em] shadow-sm transition ${
+      className={`rounded-full border ${compact ? "px-4 py-2 text-sm" : "px-6 py-3 text-base"} font-semibold tracking-[0.01em] shadow-sm transition ${
         active
           ? "border-stone-950 bg-stone-950 text-white shadow-[0_10px_24px_rgba(28,25,23,0.18)]"
           : "border-stone-300 bg-white text-stone-700 hover:border-stone-500 hover:bg-stone-50"
@@ -984,47 +1011,27 @@ function ToggleButton({ children, active, onClick }: { children: ReactNode; acti
 function OverallSummaryCard({
   title,
   basis,
-  mode,
-  onModeChange,
+  salesLabel,
   salesValue,
   yoyValue,
   yoyTwoValue,
 }: {
   title: string;
   basis: string;
-  mode: CardMetricMode;
-  onModeChange: (mode: CardMetricMode) => void;
+  salesLabel: string;
   salesValue: string;
   yoyValue: number | null;
   yoyTwoValue: number | null;
 }) {
   return (
     <article className="rounded-[24px] border border-white/55 bg-white/85 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-base font-semibold leading-snug text-stone-900">{title}</p>
-          <p className="mt-1 text-xs text-stone-400">{basis}</p>
-        </div>
-        <div className="inline-flex rounded-full border border-stone-300 bg-white p-1">
-          <button
-            type="button"
-            onClick={() => onModeChange("ytd")}
-            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${mode === "ytd" ? "bg-stone-950 text-white" : "text-stone-600"}`}
-          >
-            누적
-          </button>
-          <button
-            type="button"
-            onClick={() => onModeChange("month")}
-            className={`rounded-full px-3 py-1 text-xs font-semibold transition ${mode === "month" ? "bg-stone-950 text-white" : "text-stone-600"}`}
-          >
-            당월
-          </button>
-        </div>
+      <div>
+        <p className="text-base font-semibold leading-snug text-stone-900">{title}</p>
+        <p className="mt-1 text-xs text-stone-400">{basis}</p>
       </div>
       <div className="mt-3 space-y-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-stone-400">실판매출</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-stone-400">{salesLabel}</p>
           <p className="mt-1 text-base font-semibold text-stone-900">{salesValue} K HKD</p>
         </div>
         <div>
