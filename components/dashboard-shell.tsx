@@ -1111,7 +1111,6 @@ function MetricCell({
   const displayMetric = getDisplayMetric(metric, basisMode);
   const storeCountYoyPrev = calculateStoreCountChange(metric.storeCount, metric.previousStoreCount);
   const storeCountYoyTwo = calculateStoreCountChange(metric.storeCount, metric.twoYearStoreCount);
-  const previousStoreCountYoy = calculateStoreCountChange(metric.previousStoreCount, metric.twoYearStoreCount);
   const canShowStoreTooltip =
     storeTooltipMode != null && (metric.storeCount != null || metric.previousStoreCount != null || metric.twoYearStoreCount != null);
   const storeCountLabel =
@@ -1141,7 +1140,7 @@ function MetricCell({
               </p>
               <p className="mt-1 text-[11px] font-medium text-stone-600">
                 {TEXT.previousStoreCount} <span className="font-semibold text-stone-900">{formatStoreCount(metric.previousStoreCount, storeTooltipMode)}</span>
-                <span className={`ml-2 ${valueTone(previousStoreCountYoy)}`}>YOY {formatYoyRate(previousStoreCountYoy)}</span>
+                <span className={`ml-2 ${valueTone(storeCountYoyPrev)}`}>YOY {formatYoyRate(storeCountYoyPrev)}</span>
               </p>
               <p className="mt-1 text-[11px] font-medium text-stone-600">
                 {TEXT.twoYearStoreCount} <span className="font-semibold text-stone-900">{formatStoreCount(metric.twoYearStoreCount, storeTooltipMode)}</span>
@@ -1292,7 +1291,7 @@ function formatMetricValue(value: number | null | undefined, basisMode: TableBas
 
 function formatPerStoreSalesCell(value: number | null | undefined) {
   if (value == null || Number.isNaN(value)) return "-";
-  return new Intl.NumberFormat("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(value));
 }
 
 function formatStoreCount(value: number | null | undefined, mode?: StoreTooltipMode) {
