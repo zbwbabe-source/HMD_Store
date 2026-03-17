@@ -583,14 +583,14 @@ export function DashboardShell({
                     onClick={() => setTableBasisMode("sales")}
                     className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "sales" ? "bg-stone-950 text-white" : "text-stone-600"}`}
                   >
-                    실판
+                    실판매출
                   </button>
                   <button
                     type="button"
                     onClick={() => setTableBasisMode("perStore")}
                     className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "perStore" ? "bg-stone-950 text-white" : "text-stone-600"}`}
                   >
-                    점당
+                    점당매출
                   </button>
                 </div>
               </div>
