@@ -49,6 +49,9 @@ type CellMetric = {
   twoYearSales: number | null;
   yoyPrev: number | null;
   yoyTwo: number | null;
+  storeCount: number | null;
+  previousStoreCount: number | null;
+  twoYearStoreCount: number | null;
 };
 
 type MonthMetric = CellMetric & {
@@ -59,6 +62,7 @@ type RowKind = "overall-total" | "country-total" | "brand-total" | "channel-tota
 type ViewMode = "yoy" | "sales";
 type SortDirection = "desc" | "asc";
 type CardMetricMode = "ytd" | "month";
+type StoreTooltipMode = "month" | "ytd" | "annual";
 
 type TableRow = {
   kind: RowKind;
@@ -104,6 +108,13 @@ const TEXT = {
   emptyRows: "표시할 매장 월별 데이터가 없습니다.",
   yoyPrev: "YOY",
   yoyTwo: "전전년비",
+  storeCount: "당월 매장수",
+  previousStoreCount: "전년 매장수",
+  twoYearStoreCount: "전전년 매장수",
+  ytdAverageStoreCount: "YTD 평균 매장수",
+  annualAverageStoreCount: "연간 평균 매장수",
+  storeCountYoy: "매장수 YOY",
+  storeCountTwoYear: "매장수 전전년비",
   expand: "펼치기",
   collapse: "접기",
   storeDrilldown: "Store Drilldown",
@@ -143,6 +154,7 @@ export function DashboardShell({
   const [cardMetricMode, setCardMetricMode] = useState<CardMetricMode>("ytd");
   const [expandedChannels, setExpandedChannels] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<ViewMode>("yoy");
+  const [showDataStructureModal, setShowDataStructureModal] = useState(false);
   const [sortMonth, setSortMonth] = useState<number | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
@@ -433,6 +445,57 @@ export function DashboardShell({
     return lines.slice(0, 4);
   }, [cardMetricMode, channelHighlights, overallCardMetric.sales, overallCardMetric.yoyPrev, overallCardMetric.yoyTwo, overallCardTitle, selectedMonth]);
 
+  const dataStructureSections = useMemo(
+    () => [
+      {
+        title: "1. Excel 원본",
+        items: [
+          "`Store_Rawdata.xlsx`가 기본 forecast 원본입니다.",
+          "`scripts/import_store_rawdata.py`가 월별/연간 컬럼을 정규화합니다.",
+          "정규화 결과는 `data/normalized/*.csv`와 `data/store_dashboard.sqlite`로 적재됩니다.",
+        ],
+      },
+      {
+        title: "2. SQL actual",
+        items: [
+          "`scripts/fetch_snowflake_actuals.mjs`가 Snowflake `SAP_FNF.DW_HMD_SALE_D`에서 actual 매출을 조회합니다.",
+          "`scripts/export_store_monthly_sales_sql.py`에서 매장별·월별 actual 데이터를 받아옵니다.",
+          "현재 화면 기준월은 " + formatPeriod(latestYear, selectedMonth) + " 이므로, 해당 월까지 actual 구간으로 처리됩니다.",
+        ],
+      },
+      {
+        title: "3. 병합 규칙",
+        items: [
+          "기준 연도 이전 연도는 SQL actual을 사용합니다.",
+          "기준 연도에서는 선택한 기준월까지 SQL actual, 이후 월은 Excel forecast를 사용합니다.",
+          "TW 데이터는 병합 과정에서 환율 규칙을 적용해 HKD 기준으로 맞춥니다.",
+        ],
+      },
+      {
+        title: "4. 화면 반영 데이터",
+        items: [
+          "`data/dashboard-data.json`은 카드/요약/YoY용 `generatedAt`, `regions.monthly`, `regions.storeYoyMultiYear`를 제공합니다.",
+          "`app/page.tsx`는 `scripts/export_store_monthly_sales_sql.py`를 실행해 표용 `storeMonthlySales`를 만듭니다.",
+          "즉 상단 요약과 하단 테이블은 SQLite + SQL actual + Excel forecast를 합친 결과를 같이 사용합니다.",
+        ],
+      },
+    ],
+    [latestYear, selectedMonth],
+  );
+
+  useEffect(() => {
+    if (!showDataStructureModal) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowDataStructureModal(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showDataStructureModal]);
+
   if (!region) {
     return (
       <main className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-4 py-10">
@@ -493,7 +556,7 @@ export function DashboardShell({
               </div>
             </div>
             <div className="min-w-[460px] rounded-[28px] border border-stone-200/70 bg-stone-50/90 p-6 shadow-inner shadow-stone-900/5 md:min-w-[520px]">
-              <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-4">
                   <label htmlFor="period-select" className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">
                     {TEXT.period}
@@ -514,6 +577,13 @@ export function DashboardShell({
                   ))}
                 </select>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDataStructureModal(true)}
+                  className="rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-500 hover:bg-stone-100"
+                >
+                  데이터구조
+                </button>
               </div>
               <div className="mt-5 text-base text-stone-500">
                 <p>
@@ -574,11 +644,11 @@ export function DashboardShell({
                 <h2 className="mt-2 text-2xl font-semibold text-stone-900">{latestYear} {TEXT.annualTable}</h2>
               </div>
               <div className="flex flex-wrap gap-2">
-                <ToggleButton active={viewMode === "yoy"} onClick={() => setViewMode("yoy")}>
-                  {TEXT.viewYoy}
-                </ToggleButton>
-                <ToggleButton active={viewMode === "sales"} onClick={() => setViewMode("sales")}>
-                  {TEXT.viewSales}
+                <ToggleButton
+                  active={viewMode === "sales"}
+                  onClick={() => setViewMode(viewMode === "yoy" ? "sales" : "yoy")}
+                >
+                  {viewMode === "yoy" ? TEXT.viewSales : TEXT.viewYoy}
                 </ToggleButton>
                 <ToggleButton active={allExpanded} onClick={toggleAllChannels}>
                   {allExpanded ? TEXT.collapseAll : TEXT.expandAll}
@@ -660,17 +730,17 @@ export function DashboardShell({
                           {row.months.map((month) => (
                             <Fragment key={`${row.rowKey}-${month.month}`}>
                               <td className={`px-2 py-2 align-top ${monthCellTone(month.month, selectedMonth)}`}>
-                                <MetricCell metric={month} emphasize={isSummaryRow} viewMode={viewMode} />
+                                <MetricCell metric={month} emphasize={isSummaryRow} viewMode={viewMode} storeTooltipMode="month" />
                               </td>
                               {month.month === selectedMonth ? (
                                 <td className="bg-stone-200/80 px-2 py-2 align-top">
-                                  <MetricCell metric={row.ytd} emphasize viewMode={viewMode} />
+                                  <MetricCell metric={row.ytd} emphasize viewMode={viewMode} storeTooltipMode="ytd" />
                                 </td>
                               ) : null}
                             </Fragment>
                           ))}
                           <td className="bg-stone-50/90 px-2 py-2 align-top">
-                            <MetricCell metric={row.annual} emphasize={isSummaryRow} viewMode={viewMode} />
+                            <MetricCell metric={row.annual} emphasize={isSummaryRow} viewMode={viewMode} storeTooltipMode="annual" />
                           </td>
                         </tr>
                       );
@@ -684,6 +754,64 @@ export function DashboardShell({
           </div>
         </section>
       </div>
+      {showDataStructureModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/45 px-4 py-6">
+          <div
+            className="absolute inset-0"
+            aria-hidden="true"
+            onClick={() => setShowDataStructureModal(false)}
+          />
+          <section className="relative z-10 w-full max-w-4xl rounded-[28px] border border-white/60 bg-[#f7f3ec] p-5 shadow-[0_24px_80px_rgba(28,25,23,0.28)] md:p-6">
+            <div className="flex items-start justify-between gap-4 border-b border-stone-200 pb-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-stone-500">Data Structure</p>
+                <h3 className="mt-2 text-2xl font-semibold text-stone-900">데이터구조</h3>
+                <p className="mt-2 text-sm leading-6 text-stone-600">
+                  이 화면에서 어떤 값이 SQL actual이고, 어디부터 Excel forecast인지 기준월 기준으로 정리했습니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDataStructureModal(false)}
+                className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-500 hover:bg-stone-100"
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              {dataStructureSections.map((section) => (
+                <article key={section.title} className="rounded-[22px] border border-stone-200 bg-white/90 p-4 shadow-sm">
+                  <h4 className="text-base font-semibold text-stone-900">{section.title}</h4>
+                  <div className="mt-3 space-y-2 text-sm leading-6 text-stone-600">
+                    {section.items.map((item) => (
+                      <p key={item}>{item}</p>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-5 rounded-[22px] border border-stone-200 bg-white/90 p-4 shadow-sm">
+              <p className="text-base font-semibold text-stone-900">최종 업데이트 로그</p>
+              <div className="mt-3 grid gap-3 text-sm text-stone-600 md:grid-cols-3">
+                <div className="rounded-[18px] bg-stone-50 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-stone-400">기준월</p>
+                  <p className="mt-2 font-semibold text-stone-900">{formatPeriod(latestYear, selectedMonth)}</p>
+                </div>
+                <div className="rounded-[18px] bg-stone-50 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-stone-400">Dashboard JSON</p>
+                  <p className="mt-2 font-semibold text-stone-900">{formatTimestamp(data.generatedAt)}</p>
+                </div>
+                <div className="rounded-[18px] bg-stone-50 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-stone-400">설명 기준</p>
+                  <p className="mt-2 font-semibold text-stone-900">SQL actual + Excel forecast 병합 기준</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }
@@ -699,6 +827,9 @@ function createMetricCell(source: Record<string, number>, latestYear: number, mo
     twoYearSales: twoYears,
     yoyPrev: sales != null && previous ? sales / previous - 1 : null,
     yoyTwo: sales != null && twoYears ? sales / twoYears - 1 : null,
+    storeCount: sales != null ? (sales > 0 ? 1 : 0) : null,
+    previousStoreCount: previous != null ? (previous > 0 ? 1 : 0) : null,
+    twoYearStoreCount: twoYears != null ? (twoYears > 0 ? 1 : 0) : null,
   };
 }
 
@@ -713,6 +844,9 @@ function createYtdMetric(source: Record<string, number>, latestYear: number, sel
     twoYearSales: twoYears,
     yoyPrev: current != null && previous ? current / previous - 1 : null,
     yoyTwo: current != null && twoYears ? current / twoYears - 1 : null,
+    storeCount: calculateAverageStoreCount(source, latestYear, selectedMonth),
+    previousStoreCount: calculateAverageStoreCount(source, latestYear - 1, selectedMonth),
+    twoYearStoreCount: calculateAverageStoreCount(source, latestYear - 2, selectedMonth),
   };
 }
 
@@ -727,6 +861,9 @@ function createAnnualMetric(source: Record<string, number>, latestYear: number):
     twoYearSales: twoYears,
     yoyPrev: sales != null && previous ? sales / previous - 1 : null,
     yoyTwo: sales != null && twoYears ? sales / twoYears - 1 : null,
+    storeCount: calculateAverageStoreCount(source, latestYear, 12),
+    previousStoreCount: calculateAverageStoreCount(source, latestYear - 1, 12),
+    twoYearStoreCount: calculateAverageStoreCount(source, latestYear - 2, 12),
   };
 }
 
@@ -778,9 +915,15 @@ function aggregateMetricCells(metrics: CellMetric[]): CellMetric {
   const sales = metrics.reduce((sum, metric) => sum + (metric.sales ?? 0), 0);
   const previousSales = metrics.reduce((sum, metric) => sum + (metric.previousSales ?? 0), 0);
   const twoYearSales = metrics.reduce((sum, metric) => sum + (metric.twoYearSales ?? 0), 0);
+  const storeCount = metrics.reduce((sum, metric) => sum + (metric.storeCount ?? 0), 0);
+  const previousStoreCount = metrics.reduce((sum, metric) => sum + (metric.previousStoreCount ?? 0), 0);
+  const twoYearStoreCount = metrics.reduce((sum, metric) => sum + (metric.twoYearStoreCount ?? 0), 0);
   const hasSales = metrics.some((metric) => metric.sales != null);
   const hasPreviousSales = metrics.some((metric) => metric.previousSales != null);
   const hasTwoYearSales = metrics.some((metric) => metric.twoYearSales != null);
+  const hasStoreCount = metrics.some((metric) => metric.storeCount != null);
+  const hasPreviousStoreCount = metrics.some((metric) => metric.previousStoreCount != null);
+  const hasTwoYearStoreCount = metrics.some((metric) => metric.twoYearStoreCount != null);
 
   return {
     sales: hasSales ? sales : null,
@@ -788,6 +931,9 @@ function aggregateMetricCells(metrics: CellMetric[]): CellMetric {
     twoYearSales: hasTwoYearSales ? twoYearSales : null,
     yoyPrev: previousSales ? sales / previousSales - 1 : null,
     yoyTwo: twoYearSales ? sales / twoYearSales - 1 : null,
+    storeCount: hasStoreCount ? storeCount : null,
+    previousStoreCount: hasPreviousStoreCount ? previousStoreCount : null,
+    twoYearStoreCount: hasTwoYearStoreCount ? twoYearStoreCount : null,
   };
 }
 
@@ -926,13 +1072,57 @@ function ChannelHighlightCard({
   );
 }
 
-function MetricCell({ metric, emphasize = false, viewMode }: { metric: CellMetric; emphasize?: boolean; viewMode: ViewMode }) {
+function MetricCell({
+  metric,
+  emphasize = false,
+  viewMode,
+  storeTooltipMode,
+}: {
+  metric: CellMetric;
+  emphasize?: boolean;
+  viewMode: ViewMode;
+  storeTooltipMode?: StoreTooltipMode;
+}) {
+  const storeCountYoyPrev = calculateStoreCountChange(metric.storeCount, metric.previousStoreCount);
+  const storeCountYoyTwo = calculateStoreCountChange(metric.storeCount, metric.twoYearStoreCount);
+  const previousStoreCountYoy = calculateStoreCountChange(metric.previousStoreCount, metric.twoYearStoreCount);
+  const canShowStoreTooltip =
+    storeTooltipMode != null && (metric.storeCount != null || metric.previousStoreCount != null || metric.twoYearStoreCount != null);
+  const storeCountLabel =
+    storeTooltipMode === "ytd"
+      ? TEXT.ytdAverageStoreCount
+      : storeTooltipMode === "annual"
+        ? TEXT.annualAverageStoreCount
+        : TEXT.storeCount;
+
   return (
     <div>
       {viewMode === "sales" ? (
         <div className={`text-center text-[16px] font-semibold ${emphasize ? "text-stone-950" : "text-stone-900"}`}>{formatSalesCell(metric.sales)}</div>
       ) : null}
-      <div className={`text-center text-[12px] font-semibold ${viewMode === "sales" ? "mt-1 " : ""}${valueTone(metric.yoyPrev)}`}>{TEXT.yoyPrev} {formatYoyRate(metric.yoyPrev)}</div>
+      <div className={`text-center text-[12px] font-semibold ${viewMode === "sales" ? "mt-1 " : ""}${valueTone(metric.yoyPrev)}`}>
+        {canShowStoreTooltip ? (
+          <div className="group relative inline-flex cursor-help items-center justify-center">
+            <span>{TEXT.yoyPrev} {formatYoyRate(metric.yoyPrev)}</span>
+            <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-56 -translate-x-1/2 rounded-[18px] border border-stone-200 bg-white px-3 py-2 text-left shadow-[0_12px_28px_rgba(28,25,23,0.16)] group-hover:block">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">Store Count</p>
+              <p className="mt-2 text-[11px] font-medium text-stone-600">
+                {storeCountLabel} <span className="font-semibold text-stone-900">{formatStoreCount(metric.storeCount)}</span>
+              </p>
+              <p className="mt-1 text-[11px] font-medium text-stone-600">
+                {TEXT.previousStoreCount} <span className="font-semibold text-stone-900">{formatStoreCount(metric.previousStoreCount)}</span>
+                <span className={`ml-2 ${valueTone(previousStoreCountYoy)}`}>YOY {formatYoyRate(previousStoreCountYoy)}</span>
+              </p>
+              <p className="mt-1 text-[11px] font-medium text-stone-600">
+                {TEXT.twoYearStoreCount} <span className="font-semibold text-stone-900">{formatStoreCount(metric.twoYearStoreCount)}</span>
+                <span className={`ml-2 ${valueTone(storeCountYoyTwo)}`}>{TEXT.yoyTwo} {formatYoyRate(storeCountYoyTwo)}</span>
+              </p>
+            </div>
+          </div>
+        ) : (
+          <span>{TEXT.yoyPrev} {formatYoyRate(metric.yoyPrev)}</span>
+        )}
+      </div>
       <div className={`mt-1 text-center text-[9px] ${valueTone(metric.yoyTwo)}`}>{TEXT.yoyTwo} {formatYoyRate(metric.yoyTwo)}</div>
     </div>
   );
@@ -1040,6 +1230,38 @@ function formatYoyRate(value: number | null | undefined) {
 function formatSalesCell(value: number | null | undefined) {
   if (value == null || Number.isNaN(value)) return "-";
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(value));
+}
+
+function formatStoreCount(value: number | null | undefined) {
+  if (value == null || Number.isNaN(value)) return "-";
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
+    maximumFractionDigits: 1,
+  }).format(value) + "개";
+}
+
+function calculateStoreCountChange(current: number | null | undefined, previous: number | null | undefined) {
+  if (current == null || previous == null || Number.isNaN(current) || Number.isNaN(previous) || previous === 0) {
+    return null;
+  }
+  return current / previous - 1;
+}
+
+function calculateAverageStoreCount(source: Record<string, number>, year: number, monthLimit: number) {
+  let activeMonths = 0;
+  let hasValue = false;
+
+  for (let month = 1; month <= monthLimit; month += 1) {
+    const value = source[formatPeriod(year, month)];
+    if (value == null) continue;
+    hasValue = true;
+    if (value > 0) {
+      activeMonths += 1;
+    }
+  }
+
+  if (!hasValue) return null;
+  return activeMonths / monthLimit;
 }
 
 function formatMetricComparison(yoyPrev: number | null | undefined, yoyTwo: number | null | undefined) {
