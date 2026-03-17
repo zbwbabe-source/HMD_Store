@@ -242,7 +242,7 @@ export function DashboardShell({
           toggleKey,
           months,
           ytd: createYtdMetric(salesSource.monthlySales, latestYear, selectedMonth),
-          annual: createAnnualMetric(salesSource.annualTotals, latestYear),
+          annual: createAnnualMetric(salesSource.annualTotals, salesSource.monthlySales, latestYear),
         };
       })
       .filter((row): row is NonNullable<typeof row> => row !== null)
@@ -661,7 +661,7 @@ export function DashboardShell({
             </div>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-[22px] border border-stone-200/70 bg-white/95">
+          <div className="mt-4 overflow-visible rounded-[22px] border border-stone-200/70 bg-white/95">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1540px] table-fixed text-[11px] leading-4">
                 <thead className="bg-stone-100/95 text-stone-700">
@@ -850,10 +850,14 @@ function createYtdMetric(source: Record<string, number>, latestYear: number, sel
   };
 }
 
-function createAnnualMetric(source: Record<string, number>, latestYear: number): CellMetric {
-  const sales = source[String(latestYear)] ?? null;
-  const previous = source[String(latestYear - 1)] ?? null;
-  const twoYears = source[String(latestYear - 2)] ?? null;
+function createAnnualMetric(
+  annualSource: Record<string, number>,
+  monthlySource: Record<string, number>,
+  latestYear: number,
+): CellMetric {
+  const sales = annualSource[String(latestYear)] ?? null;
+  const previous = annualSource[String(latestYear - 1)] ?? null;
+  const twoYears = annualSource[String(latestYear - 2)] ?? null;
 
   return {
     sales,
@@ -861,9 +865,9 @@ function createAnnualMetric(source: Record<string, number>, latestYear: number):
     twoYearSales: twoYears,
     yoyPrev: sales != null && previous ? sales / previous - 1 : null,
     yoyTwo: sales != null && twoYears ? sales / twoYears - 1 : null,
-    storeCount: calculateAverageStoreCount(source, latestYear, 12),
-    previousStoreCount: calculateAverageStoreCount(source, latestYear - 1, 12),
-    twoYearStoreCount: calculateAverageStoreCount(source, latestYear - 2, 12),
+    storeCount: calculateAverageStoreCount(monthlySource, latestYear, 12),
+    previousStoreCount: calculateAverageStoreCount(monthlySource, latestYear - 1, 12),
+    twoYearStoreCount: calculateAverageStoreCount(monthlySource, latestYear - 2, 12),
   };
 }
 
@@ -1094,6 +1098,10 @@ function MetricCell({
       : storeTooltipMode === "annual"
         ? TEXT.annualAverageStoreCount
         : TEXT.storeCount;
+  const tooltipPositionClass =
+    storeTooltipMode === "annual"
+      ? "right-full top-1/2 mr-2 -translate-y-1/2"
+      : "left-1/2 top-full mt-1 -translate-x-1/2";
 
   return (
     <div>
@@ -1104,17 +1112,17 @@ function MetricCell({
         {canShowStoreTooltip ? (
           <div className="group relative inline-flex cursor-help items-center justify-center">
             <span>{TEXT.yoyPrev} {formatYoyRate(metric.yoyPrev)}</span>
-            <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-56 -translate-x-1/2 rounded-[18px] border border-stone-200 bg-white px-3 py-2 text-left shadow-[0_12px_28px_rgba(28,25,23,0.16)] group-hover:block">
+            <div className={`pointer-events-none absolute z-20 hidden w-56 rounded-[18px] border border-stone-200 bg-white px-3 py-2 text-left shadow-[0_12px_28px_rgba(28,25,23,0.16)] group-hover:block ${tooltipPositionClass}`}>
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">Store Count</p>
               <p className="mt-2 text-[11px] font-medium text-stone-600">
-                {storeCountLabel} <span className="font-semibold text-stone-900">{formatStoreCount(metric.storeCount)}</span>
+                {storeCountLabel} <span className="font-semibold text-stone-900">{formatStoreCount(metric.storeCount, storeTooltipMode)}</span>
               </p>
               <p className="mt-1 text-[11px] font-medium text-stone-600">
-                {TEXT.previousStoreCount} <span className="font-semibold text-stone-900">{formatStoreCount(metric.previousStoreCount)}</span>
+                {TEXT.previousStoreCount} <span className="font-semibold text-stone-900">{formatStoreCount(metric.previousStoreCount, storeTooltipMode)}</span>
                 <span className={`ml-2 ${valueTone(previousStoreCountYoy)}`}>YOY {formatYoyRate(previousStoreCountYoy)}</span>
               </p>
               <p className="mt-1 text-[11px] font-medium text-stone-600">
-                {TEXT.twoYearStoreCount} <span className="font-semibold text-stone-900">{formatStoreCount(metric.twoYearStoreCount)}</span>
+                {TEXT.twoYearStoreCount} <span className="font-semibold text-stone-900">{formatStoreCount(metric.twoYearStoreCount, storeTooltipMode)}</span>
                 <span className={`ml-2 ${valueTone(storeCountYoyTwo)}`}>{TEXT.yoyTwo} {formatYoyRate(storeCountYoyTwo)}</span>
               </p>
             </div>
@@ -1232,11 +1240,12 @@ function formatSalesCell(value: number | null | undefined) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(value));
 }
 
-function formatStoreCount(value: number | null | undefined) {
+function formatStoreCount(value: number | null | undefined, mode?: StoreTooltipMode) {
   if (value == null || Number.isNaN(value)) return "-";
+  const useSingleDecimal = mode === "ytd" || mode === "annual";
   return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
-    maximumFractionDigits: 1,
+    minimumFractionDigits: useSingleDecimal ? 1 : 0,
+    maximumFractionDigits: useSingleDecimal ? 1 : 1,
   }).format(value) + "개";
 }
 
