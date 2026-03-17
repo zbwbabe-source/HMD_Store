@@ -60,6 +60,7 @@ type MonthMetric = CellMetric & {
 
 type RowKind = "overall-total" | "country-total" | "brand-total" | "channel-total" | "store";
 type ViewMode = "yoy" | "sales";
+type TableBasisMode = "sales" | "perStore";
 type SortDirection = "desc" | "asc";
 type CardMetricMode = "ytd" | "month";
 type StoreTooltipMode = "month" | "ytd" | "annual";
@@ -108,6 +109,8 @@ const TEXT = {
   emptyRows: "표시할 매장 월별 데이터가 없습니다.",
   yoyPrev: "YOY",
   yoyTwo: "전전년비",
+  salesBasis: "실판매출 기준",
+  perStoreBasis: "점당매출기준",
   storeCount: "당월 매장수",
   previousStoreCount: "전년 매장수",
   twoYearStoreCount: "전전년 매장수",
@@ -154,6 +157,7 @@ export function DashboardShell({
   const [cardMetricMode, setCardMetricMode] = useState<CardMetricMode>("ytd");
   const [expandedChannels, setExpandedChannels] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<ViewMode>("yoy");
+  const [tableBasisMode, setTableBasisMode] = useState<TableBasisMode>("sales");
   const [showDataStructureModal, setShowDataStructureModal] = useState(false);
   const [sortMonth, setSortMonth] = useState<number | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -328,14 +332,16 @@ export function DashboardShell({
           );
 
           if (expandedChannels[toggleKey] ?? false) {
-            rows.push(...sortRowsForMonth(channelRows, sortMonth, sortDirection, viewMode));
+            rows.push(...sortRowsForMonth(channelRows, sortMonth, sortDirection, viewMode, tableBasisMode));
           }
         }
       }
     }
 
     return rows;
-  }, [countryLabel, expandedChannels, regionKey, sortDirection, sortMonth, tableRows, viewMode]);
+  }, [countryLabel, expandedChannels, regionKey, sortDirection, sortMonth, tableBasisMode, tableRows, viewMode]);
+
+  const unitBasisLabel = tableBasisMode === "perStore" ? TEXT.perStoreBasis : TEXT.salesBasis;
 
   const toggleAllChannels = () => {
     setExpandedChannels(Object.fromEntries(channelKeys.map((key) => [key, !allExpanded])));
@@ -650,6 +656,12 @@ export function DashboardShell({
                 >
                   {viewMode === "yoy" ? TEXT.viewSales : TEXT.viewYoy}
                 </ToggleButton>
+                <ToggleButton
+                  active={tableBasisMode === "perStore"}
+                  onClick={() => setTableBasisMode(tableBasisMode === "sales" ? "perStore" : "sales")}
+                >
+                  {tableBasisMode === "sales" ? TEXT.perStoreBasis : TEXT.salesBasis}
+                </ToggleButton>
                 <ToggleButton active={allExpanded} onClick={toggleAllChannels}>
                   {allExpanded ? TEXT.collapseAll : TEXT.expandAll}
                 </ToggleButton>
@@ -657,7 +669,7 @@ export function DashboardShell({
             </div>
             <div className="text-right text-sm text-stone-500">
               <p>{TEXT.ytdRight}</p>
-              <p className="mt-1">{TEXT.unit}</p>
+              <p className="mt-1">{`${TEXT.unit} ${unitBasisLabel}`}</p>
             </div>
           </div>
 
@@ -730,17 +742,17 @@ export function DashboardShell({
                           {row.months.map((month) => (
                             <Fragment key={`${row.rowKey}-${month.month}`}>
                               <td className={`px-2 py-2 align-top ${monthCellTone(month.month, selectedMonth)}`}>
-                                <MetricCell metric={month} emphasize={isSummaryRow} viewMode={viewMode} storeTooltipMode="month" />
+                                <MetricCell metric={month} emphasize={isSummaryRow} viewMode={viewMode} basisMode={tableBasisMode} storeTooltipMode="month" />
                               </td>
                               {month.month === selectedMonth ? (
                                 <td className="bg-stone-200/80 px-2 py-2 align-top">
-                                  <MetricCell metric={row.ytd} emphasize viewMode={viewMode} storeTooltipMode="ytd" />
+                                  <MetricCell metric={row.ytd} emphasize viewMode={viewMode} basisMode={tableBasisMode} storeTooltipMode="ytd" />
                                 </td>
                               ) : null}
                             </Fragment>
                           ))}
                           <td className="bg-stone-50/90 px-2 py-2 align-top">
-                            <MetricCell metric={row.annual} emphasize={isSummaryRow} viewMode={viewMode} storeTooltipMode="annual" />
+                            <MetricCell metric={row.annual} emphasize={isSummaryRow} viewMode={viewMode} basisMode={tableBasisMode} storeTooltipMode="annual" />
                           </td>
                         </tr>
                       );
@@ -1080,13 +1092,16 @@ function MetricCell({
   metric,
   emphasize = false,
   viewMode,
+  basisMode = "sales",
   storeTooltipMode,
 }: {
   metric: CellMetric;
   emphasize?: boolean;
   viewMode: ViewMode;
+  basisMode?: TableBasisMode;
   storeTooltipMode?: StoreTooltipMode;
 }) {
+  const displayMetric = getDisplayMetric(metric, basisMode);
   const storeCountYoyPrev = calculateStoreCountChange(metric.storeCount, metric.previousStoreCount);
   const storeCountYoyTwo = calculateStoreCountChange(metric.storeCount, metric.twoYearStoreCount);
   const previousStoreCountYoy = calculateStoreCountChange(metric.previousStoreCount, metric.twoYearStoreCount);
@@ -1106,12 +1121,12 @@ function MetricCell({
   return (
     <div>
       {viewMode === "sales" ? (
-        <div className={`text-center text-[16px] font-semibold ${emphasize ? "text-stone-950" : "text-stone-900"}`}>{formatSalesCell(metric.sales)}</div>
+        <div className={`text-center text-[16px] font-semibold ${emphasize ? "text-stone-950" : "text-stone-900"}`}>{formatMetricValue(displayMetric.sales, basisMode)}</div>
       ) : null}
-      <div className={`text-center text-[12px] font-semibold ${viewMode === "sales" ? "mt-1 " : ""}${valueTone(metric.yoyPrev)}`}>
+      <div className={`text-center text-[12px] font-semibold ${viewMode === "sales" ? "mt-1 " : ""}${valueTone(displayMetric.yoyPrev)}`}>
         {canShowStoreTooltip ? (
           <div className="group relative inline-flex cursor-help items-center justify-center">
-            <span>{TEXT.yoyPrev} {formatYoyRate(metric.yoyPrev)}</span>
+            <span>{TEXT.yoyPrev} {formatYoyRate(displayMetric.yoyPrev)}</span>
             <div className={`pointer-events-none absolute z-20 hidden w-56 rounded-[18px] border border-stone-200 bg-white px-3 py-2 text-left shadow-[0_12px_28px_rgba(28,25,23,0.16)] group-hover:block ${tooltipPositionClass}`}>
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">Store Count</p>
               <p className="mt-2 text-[11px] font-medium text-stone-600">
@@ -1128,10 +1143,10 @@ function MetricCell({
             </div>
           </div>
         ) : (
-          <span>{TEXT.yoyPrev} {formatYoyRate(metric.yoyPrev)}</span>
+          <span>{TEXT.yoyPrev} {formatYoyRate(displayMetric.yoyPrev)}</span>
         )}
       </div>
-      <div className={`mt-1 text-center text-[9px] ${valueTone(metric.yoyTwo)}`}>{TEXT.yoyTwo} {formatYoyRate(metric.yoyTwo)}</div>
+      <div className={`mt-1 text-center text-[9px] ${valueTone(displayMetric.yoyTwo)}`}>{TEXT.yoyTwo} {formatYoyRate(displayMetric.yoyTwo)}</div>
     </div>
   );
 }
@@ -1201,17 +1216,18 @@ function getCountryOrder(regionKey: string, groups: Map<string, TableRow[]>) {
   return Array.from(groups.keys());
 }
 
-function getSortValue(row: TableRow, sortMonth: number, viewMode: ViewMode) {
+function getSortValue(row: TableRow, sortMonth: number, viewMode: ViewMode, basisMode: TableBasisMode) {
   const metric = row.months[sortMonth - 1];
   if (!metric) return Number.NEGATIVE_INFINITY;
-  const value = viewMode === "yoy" ? metric.yoyPrev : metric.sales;
+  const displayMetric = getDisplayMetric(metric, basisMode);
+  const value = viewMode === "yoy" ? displayMetric.yoyPrev : displayMetric.sales;
   return value == null || Number.isNaN(value) ? Number.NEGATIVE_INFINITY : value;
 }
 
-function sortRowsForMonth(rows: TableRow[], sortMonth: number | null, sortDirection: SortDirection, viewMode: ViewMode) {
+function sortRowsForMonth(rows: TableRow[], sortMonth: number | null, sortDirection: SortDirection, viewMode: ViewMode, basisMode: TableBasisMode) {
   if (sortMonth == null) return rows;
   return [...rows].sort((a, b) => {
-    const rawDiff = getSortValue(b, sortMonth, viewMode) - getSortValue(a, sortMonth, viewMode);
+    const rawDiff = getSortValue(b, sortMonth, viewMode, basisMode) - getSortValue(a, sortMonth, viewMode, basisMode);
     const diff = sortDirection === "desc" ? rawDiff : -rawDiff;
     if (diff !== 0) return diff;
     return a.storeName.localeCompare(b.storeName);
@@ -1240,6 +1256,38 @@ function formatSalesCell(value: number | null | undefined) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(value));
 }
 
+function getDisplayMetric(metric: CellMetric, basisMode: TableBasisMode) {
+  if (basisMode === "sales") {
+    return {
+      sales: metric.sales,
+      yoyPrev: metric.yoyPrev,
+      yoyTwo: metric.yoyTwo,
+    };
+  }
+
+  const sales = calculatePerStoreSales(metric.sales, metric.storeCount);
+  const previousSales = calculatePerStoreSales(metric.previousSales, metric.previousStoreCount);
+  const twoYearSales = calculatePerStoreSales(metric.twoYearSales, metric.twoYearStoreCount);
+
+  return {
+    sales,
+    yoyPrev: calculateRatioChange(sales, previousSales),
+    yoyTwo: calculateRatioChange(sales, twoYearSales),
+  };
+}
+
+function formatMetricValue(value: number | null | undefined, basisMode: TableBasisMode) {
+  if (basisMode === "perStore") {
+    return formatPerStoreSalesCell(value);
+  }
+  return formatSalesCell(value);
+}
+
+function formatPerStoreSalesCell(value: number | null | undefined) {
+  if (value == null || Number.isNaN(value)) return "-";
+  return new Intl.NumberFormat("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
+}
+
 function formatStoreCount(value: number | null | undefined, mode?: StoreTooltipMode) {
   if (value == null || Number.isNaN(value)) return "-";
   const useSingleDecimal = mode === "ytd" || mode === "annual";
@@ -1250,6 +1298,20 @@ function formatStoreCount(value: number | null | undefined, mode?: StoreTooltipM
 }
 
 function calculateStoreCountChange(current: number | null | undefined, previous: number | null | undefined) {
+  if (current == null || previous == null || Number.isNaN(current) || Number.isNaN(previous) || previous === 0) {
+    return null;
+  }
+  return current / previous - 1;
+}
+
+function calculatePerStoreSales(sales: number | null | undefined, storeCount: number | null | undefined) {
+  if (sales == null || storeCount == null || Number.isNaN(sales) || Number.isNaN(storeCount) || storeCount <= 0) {
+    return null;
+  }
+  return sales / storeCount;
+}
+
+function calculateRatioChange(current: number | null | undefined, previous: number | null | undefined) {
   if (current == null || previous == null || Number.isNaN(current) || Number.isNaN(previous) || previous === 0) {
     return null;
   }
