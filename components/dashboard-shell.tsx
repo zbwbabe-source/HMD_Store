@@ -136,8 +136,8 @@ const BRAND_LABELS: Record<string, string> = {
 
 const DEFAULT_SELECTED_MONTH = 2;
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => index + 1);
-const PER_STORE_BASIS_LABEL = "가중평균월평균점당매출 기준";
-const PER_STORE_SALES_LABEL = "가중평균월평균점당매출";
+const PER_STORE_BASIS_LABEL = "점당매출 기준";
+const PER_STORE_SALES_LABEL = "점당매출";
 const YTD_STORE_COUNT_SUM_LABEL = "YTD 매장수 합계";
 const ANNUAL_STORE_COUNT_SUM_LABEL = "연간 매장수 합계";
 
@@ -594,7 +594,7 @@ export function DashboardShell({
                     onClick={() => setTableBasisMode("perStore")}
                     className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "perStore" ? "bg-stone-950 text-white" : "text-stone-600"}`}
                   >
-                    가중평균월평균점당매출
+                    점당매출
                   </button>
                 </div>
               </div>
@@ -647,6 +647,9 @@ export function DashboardShell({
             salesValue={formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)}
             yoyValue={overallCardDisplayMetric.yoyPrev}
             yoyTwoValue={overallCardDisplayMetric.yoyTwo}
+            salesMetric={overallCardMetric}
+            basisMode={tableBasisMode}
+            storeTooltipMode={cardMetricMode === "month" ? "month" : "ytd"}
           />
           {channelHighlights.map((item) => (
             <ChannelHighlightCard
@@ -1019,6 +1022,9 @@ function OverallSummaryCard({
   salesValue,
   yoyValue,
   yoyTwoValue,
+  salesMetric,
+  basisMode = "sales",
+  storeTooltipMode,
 }: {
   title: string;
   basis: string;
@@ -1026,7 +1032,25 @@ function OverallSummaryCard({
   salesValue: string;
   yoyValue: number | null;
   yoyTwoValue: number | null;
+  salesMetric?: CellMetric;
+  basisMode?: TableBasisMode;
+  storeTooltipMode?: StoreTooltipMode;
 }) {
+  const showPerStoreFormulaTooltip =
+    basisMode === "perStore" && salesMetric != null && storeTooltipMode != null && salesMetric.sales != null && salesMetric.storeCount != null;
+  const formulaTooltipTitle =
+    storeTooltipMode === "month"
+      ? "월 점당매출 계산식"
+      : "YTD 가중평균월평균점당매출 계산식";
+  const formulaTooltipCountLabel =
+    storeTooltipMode === "month"
+      ? TEXT.storeCount
+      : YTD_STORE_COUNT_SUM_LABEL;
+  const formulaTooltipDescription =
+    storeTooltipMode === "month"
+      ? "당월 매출을 당월 매장수로 나눕니다."
+      : "월별 매출 합계를 월별 매장수 합계로 나눈 가중평균 방식입니다.";
+
   return (
     <article className="rounded-[24px] border border-white/55 bg-white/85 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
       <div>
@@ -1036,7 +1060,29 @@ function OverallSummaryCard({
       <div className="mt-3 space-y-3">
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-stone-400">{salesLabel}</p>
-          <p className="mt-1 text-base font-semibold text-stone-900">{salesValue} K HKD</p>
+          <p className="mt-1 text-base font-semibold text-stone-900">
+            {showPerStoreFormulaTooltip ? (
+              <span className="group relative inline-flex cursor-help items-center justify-center">
+                <span className="border-b border-dotted border-stone-400/80">{salesValue} K HKD</span>
+                <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-72 -translate-x-1/2 rounded-[18px] border border-stone-200 bg-white px-3 py-3 text-left shadow-[0_12px_28px_rgba(28,25,23,0.16)] group-hover:block">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">Formula</span>
+                  <span className="mt-2 block text-[12px] font-semibold text-stone-900">{formulaTooltipTitle}</span>
+                  <span className="mt-1 block text-[11px] leading-5 text-stone-600">{formulaTooltipDescription}</span>
+                  <span className="mt-2 block text-[11px] font-medium text-stone-700">
+                    계산식 <span className="font-semibold text-stone-900">매출합계 / 매장수 합계</span>
+                  </span>
+                  <span className="mt-1 block text-[11px] font-medium text-stone-600">
+                    매출합계 <span className="font-semibold text-stone-900">{formatSalesCell(salesMetric.sales)}</span>
+                  </span>
+                  <span className="mt-1 block text-[11px] font-medium text-stone-600">
+                    {formulaTooltipCountLabel} <span className="font-semibold text-stone-900">{formatStoreCount(salesMetric.storeCount, storeTooltipMode)}</span>
+                  </span>
+                </span>
+              </span>
+            ) : (
+              `${salesValue} K HKD`
+            )}
+          </p>
         </div>
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-stone-400">YOY</p>
@@ -1467,5 +1513,7 @@ function pillTone(value: number | null | undefined) {
   if (value == null || Number.isNaN(value)) return "bg-stone-100 text-stone-600";
   return value >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700";
 }
+
+
 
 
