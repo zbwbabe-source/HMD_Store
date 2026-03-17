@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -136,6 +136,10 @@ const BRAND_LABELS: Record<string, string> = {
 
 const DEFAULT_SELECTED_MONTH = 2;
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => index + 1);
+const PER_STORE_BASIS_LABEL = "가중평균월평균점당매출 기준";
+const PER_STORE_SALES_LABEL = "가중평균월평균점당매출";
+const YTD_STORE_COUNT_SUM_LABEL = "YTD 매장수 합계";
+const ANNUAL_STORE_COUNT_SUM_LABEL = "연간 매장수 합계";
 
 export function DashboardShell({
   data,
@@ -341,7 +345,7 @@ export function DashboardShell({
     return rows;
   }, [countryLabel, expandedChannels, regionKey, sortDirection, sortMonth, tableBasisMode, tableRows, viewMode]);
 
-  const unitBasisLabel = tableBasisMode === "perStore" ? TEXT.perStoreBasis : TEXT.salesBasis;
+  const unitBasisLabel = tableBasisMode === "perStore" ? PER_STORE_BASIS_LABEL : TEXT.salesBasis;
 
   const toggleAllChannels = () => {
     setExpandedChannels(Object.fromEntries(channelKeys.map((key) => [key, !allExpanded])));
@@ -590,7 +594,7 @@ export function DashboardShell({
                     onClick={() => setTableBasisMode("perStore")}
                     className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "perStore" ? "bg-stone-950 text-white" : "text-stone-600"}`}
                   >
-                    점당매출
+                    가중평균월평균점당매출
                   </button>
                 </div>
               </div>
@@ -639,7 +643,7 @@ export function DashboardShell({
           <OverallSummaryCard
             title={overallCardTitle}
             basis={formatCardBasis(selectedMonth, cardMetricMode)}
-            salesLabel={tableBasisMode === "perStore" ? "점당매출" : "실판매출"}
+            salesLabel={tableBasisMode === "perStore" ? PER_STORE_SALES_LABEL : "실판매출"}
             salesValue={formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)}
             yoyValue={overallCardDisplayMetric.yoyPrev}
             yoyTwoValue={overallCardDisplayMetric.yoyTwo}
@@ -883,9 +887,9 @@ function createYtdMetric(source: Record<string, number>, latestYear: number, sel
     twoYearSales: twoYears,
     yoyPrev: current != null && previous ? current / previous - 1 : null,
     yoyTwo: current != null && twoYears ? current / twoYears - 1 : null,
-    storeCount: calculateAverageStoreCount(source, latestYear, selectedMonth),
-    previousStoreCount: calculateAverageStoreCount(source, latestYear - 1, selectedMonth),
-    twoYearStoreCount: calculateAverageStoreCount(source, latestYear - 2, selectedMonth),
+    storeCount: calculateCumulativeStoreCount(source, latestYear, selectedMonth),
+    previousStoreCount: calculateCumulativeStoreCount(source, latestYear - 1, selectedMonth),
+    twoYearStoreCount: calculateCumulativeStoreCount(source, latestYear - 2, selectedMonth),
   };
 }
 
@@ -904,9 +908,9 @@ function createAnnualMetric(
     twoYearSales: twoYears,
     yoyPrev: sales != null && previous ? sales / previous - 1 : null,
     yoyTwo: sales != null && twoYears ? sales / twoYears - 1 : null,
-    storeCount: calculateAverageStoreCount(monthlySource, latestYear, 12),
-    previousStoreCount: calculateAverageStoreCount(monthlySource, latestYear - 1, 12),
-    twoYearStoreCount: calculateAverageStoreCount(monthlySource, latestYear - 2, 12),
+    storeCount: calculateCumulativeStoreCount(monthlySource, latestYear, 12),
+    previousStoreCount: calculateCumulativeStoreCount(monthlySource, latestYear - 1, 12),
+    twoYearStoreCount: calculateCumulativeStoreCount(monthlySource, latestYear - 2, 12),
   };
 }
 
@@ -1115,19 +1119,59 @@ function MetricCell({
     storeTooltipMode != null && (metric.storeCount != null || metric.previousStoreCount != null || metric.twoYearStoreCount != null);
   const storeCountLabel =
     storeTooltipMode === "ytd"
-      ? TEXT.ytdAverageStoreCount
+      ? YTD_STORE_COUNT_SUM_LABEL
       : storeTooltipMode === "annual"
-        ? TEXT.annualAverageStoreCount
+        ? ANNUAL_STORE_COUNT_SUM_LABEL
         : TEXT.storeCount;
   const tooltipPositionClass =
     storeTooltipMode === "annual"
       ? "right-full top-1/2 mr-2 -translate-y-1/2"
       : "left-1/2 top-full mt-1 -translate-x-1/2";
+  const canShowFormulaTooltip =
+    basisMode === "perStore" && viewMode === "sales" && storeTooltipMode != null && displayMetric.sales != null && metric.storeCount != null;
+  const formulaTooltipTitle =
+    storeTooltipMode === "month"
+      ? "월 점당매출 계산식"
+      : storeTooltipMode === "ytd"
+        ? "YTD 가중평균월평균점당매출 계산식"
+        : "연간 가중평균월평균점당매출 계산식";
+  const formulaTooltipCountLabel =
+    storeTooltipMode === "month"
+      ? TEXT.storeCount
+      : storeTooltipMode === "ytd"
+        ? YTD_STORE_COUNT_SUM_LABEL
+        : ANNUAL_STORE_COUNT_SUM_LABEL;
+  const formulaTooltipDescription =
+    storeTooltipMode === "month"
+      ? "당월 매출을 당월 매장수로 나눕니다."
+      : "월별 매출 합계를 월별 매장수 합계로 나눈 가중평균 방식입니다.";
 
   return (
     <div>
       {viewMode === "sales" ? (
-        <div className={`text-center text-[16px] font-semibold ${emphasize ? "text-stone-950" : "text-stone-900"}`}>{formatMetricValue(displayMetric.sales, basisMode)}</div>
+        <div className={`text-center text-[16px] font-semibold ${emphasize ? "text-stone-950" : "text-stone-900"}`}>
+          {canShowFormulaTooltip ? (
+            <div className="group relative inline-flex cursor-help items-center justify-center">
+              <span className="border-b border-dotted border-stone-400/80">{formatMetricValue(displayMetric.sales, basisMode)}</span>
+              <div className={`pointer-events-none absolute z-20 hidden w-72 rounded-[18px] border border-stone-200 bg-white px-3 py-3 text-left shadow-[0_12px_28px_rgba(28,25,23,0.16)] group-hover:block ${tooltipPositionClass}`}>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">Formula</p>
+                <p className="mt-2 text-[12px] font-semibold text-stone-900">{formulaTooltipTitle}</p>
+                <p className="mt-1 text-[11px] leading-5 text-stone-600">{formulaTooltipDescription}</p>
+                <p className="mt-2 text-[11px] font-medium text-stone-700">
+                  계산식 <span className="font-semibold text-stone-900">매출합계 / 매장수 합계</span>
+                </p>
+                <p className="mt-1 text-[11px] font-medium text-stone-600">
+                  매출합계 <span className="font-semibold text-stone-900">{formatSalesCell(metric.sales)}</span>
+                </p>
+                <p className="mt-1 text-[11px] font-medium text-stone-600">
+                  {formulaTooltipCountLabel} <span className="font-semibold text-stone-900">{formatStoreCount(metric.storeCount, storeTooltipMode)}</span>
+                </p>
+              </div>
+            </div>
+          ) : (
+            formatMetricValue(displayMetric.sales, basisMode)
+          )}
+        </div>
       ) : null}
       <div className={`text-center text-[12px] font-semibold ${viewMode === "sales" ? "mt-1 " : ""}${valueTone(displayMetric.yoyPrev)}`}>
         {canShowStoreTooltip ? (
@@ -1296,7 +1340,7 @@ function formatPerStoreSalesCell(value: number | null | undefined) {
 
 function formatStoreCount(value: number | null | undefined, mode?: StoreTooltipMode) {
   if (value == null || Number.isNaN(value)) return "-";
-  const useSingleDecimal = mode === "ytd" || mode === "annual";
+  const useSingleDecimal = false;
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: useSingleDecimal ? 1 : 0,
     maximumFractionDigits: useSingleDecimal ? 1 : 1,
@@ -1324,8 +1368,8 @@ function calculateRatioChange(current: number | null | undefined, previous: numb
   return current / previous - 1;
 }
 
-function calculateAverageStoreCount(source: Record<string, number>, year: number, monthLimit: number) {
-  let activeMonths = 0;
+function calculateCumulativeStoreCount(source: Record<string, number>, year: number, monthLimit: number) {
+  let activeStoreMonths = 0;
   let hasValue = false;
 
   for (let month = 1; month <= monthLimit; month += 1) {
@@ -1333,12 +1377,12 @@ function calculateAverageStoreCount(source: Record<string, number>, year: number
     if (value == null) continue;
     hasValue = true;
     if (value > 0) {
-      activeMonths += 1;
+      activeStoreMonths += 1;
     }
   }
 
   if (!hasValue) return null;
-  return activeMonths / monthLimit;
+  return activeStoreMonths;
 }
 
 function formatMetricComparison(yoyPrev: number | null | undefined, yoyTwo: number | null | undefined) {
@@ -1423,3 +1467,5 @@ function pillTone(value: number | null | undefined) {
   if (value == null || Number.isNaN(value)) return "bg-stone-100 text-stone-600";
   return value >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700";
 }
+
+
