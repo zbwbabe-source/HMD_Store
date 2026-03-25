@@ -39,6 +39,8 @@ type StoreMonthlySales = Record<
       storeName: string;
       monthlySales: Record<string, number>;
       annualTotals: Record<string, number>;
+      monthlyTagSales: Record<string, number>;
+      annualTagTotals: Record<string, number>;
     }
   >
 >;
@@ -47,6 +49,9 @@ type CellMetric = {
   sales: number | null;
   previousSales: number | null;
   twoYearSales: number | null;
+  tagSales: number | null;
+  tagPreviousSales: number | null;
+  tagTwoYearSales: number | null;
   yoyPrev: number | null;
   yoyTwo: number | null;
   storeCount: number | null;
@@ -60,7 +65,7 @@ type MonthMetric = CellMetric & {
 
 type RowKind = "overall-total" | "country-total" | "brand-total" | "channel-total" | "store";
 type ViewMode = "yoy" | "sales";
-type TableBasisMode = "sales" | "perStore";
+type TableBasisMode = "sales" | "perStore" | "tag";
 type SortDirection = "desc" | "asc";
 type CardMetricMode = "ytd" | "month";
 type StoreTooltipMode = "month" | "ytd" | "annual";
@@ -111,6 +116,7 @@ const TEXT = {
   yoyTwo: "전전년비",
   salesBasis: "실판매출 기준",
   perStoreBasis: "점당매출기준",
+  tagBasis: "택가매출 기준",
   storeCount: "당월 매장수",
   previousStoreCount: "전년 매장수",
   twoYearStoreCount: "전전년 매장수",
@@ -138,6 +144,8 @@ const DEFAULT_SELECTED_MONTH = 2;
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => index + 1);
 const PER_STORE_BASIS_LABEL = "점당매출 기준";
 const PER_STORE_SALES_LABEL = "점당매출";
+const TAG_BASIS_LABEL = "택가매출 기준";
+const TAG_SALES_LABEL = "택가매출";
 const YTD_STORE_COUNT_SUM_LABEL = "YTD 매장수 합계";
 const ANNUAL_STORE_COUNT_SUM_LABEL = "연간 매장수 합계";
 
@@ -235,7 +243,7 @@ export function DashboardShell({
 
         const months = MONTH_OPTIONS.map((month) => ({
           month,
-          ...createMetricCell(salesSource.monthlySales, latestYear, month),
+          ...createMetricCell(salesSource.monthlySales, salesSource.monthlyTagSales, latestYear, month),
         }));
         const rowCountry = getStoreCountry(regionKey, store.storeCode, countryLabel);
         const toggleKey = `${rowCountry}__${salesSource.brand}__${salesSource.channel}`;
@@ -249,8 +257,8 @@ export function DashboardShell({
           rowKey: store.storeCode,
           toggleKey,
           months,
-          ytd: createYtdMetric(salesSource.monthlySales, latestYear, selectedMonth),
-          annual: createAnnualMetric(salesSource.annualTotals, salesSource.monthlySales, latestYear),
+          ytd: createYtdMetric(salesSource.monthlySales, salesSource.monthlyTagSales, latestYear, selectedMonth),
+          annual: createAnnualMetric(salesSource.annualTotals, salesSource.annualTagTotals, salesSource.monthlySales, latestYear),
         };
       })
       .filter((row): row is NonNullable<typeof row> => row !== null)
@@ -345,7 +353,7 @@ export function DashboardShell({
     return rows;
   }, [countryLabel, expandedChannels, regionKey, sortDirection, sortMonth, tableBasisMode, tableRows, viewMode]);
 
-  const unitBasisLabel = tableBasisMode === "perStore" ? PER_STORE_BASIS_LABEL : TEXT.salesBasis;
+  const unitBasisLabel = getBasisLabel(tableBasisMode);
 
   const toggleAllChannels = () => {
     setExpandedChannels(Object.fromEntries(channelKeys.map((key) => [key, !allExpanded])));
@@ -374,49 +382,54 @@ export function DashboardShell({
     }
 
     return Array.from(grouped.entries()).map(([channel, rows]) => {
-      const metrics = rows.map((row) => ({ row, metric: getCardMetric(row) }));
+      const metrics = rows.map((row) => {
+        const metric = getCardMetric(row);
+        const displayMetric = getDisplayMetric(metric, tableBasisMode);
+        return { row, metric, displayMetric };
+      });
       const channelMetric = aggregateMetricCells(metrics.map((entry) => entry.metric));
+      const displayChannelMetric = getDisplayMetric(channelMetric, tableBasisMode);
       const topYoy = metrics.reduce<{ storeName: string; value: number; yoyTwo: number | null } | null>((best, entry) => {
-        const value = entry.metric.yoyPrev;
+        const value = entry.displayMetric.yoyPrev;
         if (value == null) return best;
         if (!best || value > best.value) {
-          return { storeName: entry.row.storeName, value, yoyTwo: entry.metric.yoyTwo };
+          return { storeName: entry.row.storeName, value, yoyTwo: entry.displayMetric.yoyTwo };
         }
         return best;
       }, null);
 
       const topSales = metrics.reduce<{ storeName: string; value: number; yoyPrev: number | null; yoyTwo: number | null } | null>((best, entry) => {
-        const value = entry.metric.sales;
+        const value = entry.displayMetric.sales;
         if (value == null) return best;
         if (!best || value > best.value) {
-          return { storeName: entry.row.storeName, value, yoyPrev: entry.metric.yoyPrev, yoyTwo: entry.metric.yoyTwo };
+          return { storeName: entry.row.storeName, value, yoyPrev: entry.displayMetric.yoyPrev, yoyTwo: entry.displayMetric.yoyTwo };
         }
         return best;
       }, null);
 
-      return { channel, channelMetric, topYoy, topSales };
+      return { channel, channelMetric, displayChannelMetric, topYoy, topSales };
     }).sort((a, b) => getChannelCardOrder(a.channel) - getChannelCardOrder(b.channel) || a.channel.localeCompare(b.channel));
-  }, [cardMetricMode, getCardMetric, selectedMonth, storeOnlyRows]);
+  }, [getCardMetric, storeOnlyRows, tableBasisMode]);
 
   const trendSummary = useMemo(() => {
     const strongestGrowth = channelHighlights
-      .filter((item) => item.channelMetric.yoyPrev != null)
-      .sort((a, b) => (b.channelMetric.yoyPrev ?? Number.NEGATIVE_INFINITY) - (a.channelMetric.yoyPrev ?? Number.NEGATIVE_INFINITY))[0];
+      .filter((item) => item.displayChannelMetric.yoyPrev != null)
+      .sort((a, b) => (b.displayChannelMetric.yoyPrev ?? Number.NEGATIVE_INFINITY) - (a.displayChannelMetric.yoyPrev ?? Number.NEGATIVE_INFINITY))[0];
     const strongestRecovery = channelHighlights
-      .filter((item) => item.channelMetric.yoyTwo != null)
-      .sort((a, b) => (b.channelMetric.yoyTwo ?? Number.NEGATIVE_INFINITY) - (a.channelMetric.yoyTwo ?? Number.NEGATIVE_INFINITY))[0];
+      .filter((item) => item.displayChannelMetric.yoyTwo != null)
+      .sort((a, b) => (b.displayChannelMetric.yoyTwo ?? Number.NEGATIVE_INFINITY) - (a.displayChannelMetric.yoyTwo ?? Number.NEGATIVE_INFINITY))[0];
     const softestRecovery = channelHighlights
-      .filter((item) => item.channelMetric.yoyTwo != null)
-      .sort((a, b) => (a.channelMetric.yoyTwo ?? Number.POSITIVE_INFINITY) - (b.channelMetric.yoyTwo ?? Number.POSITIVE_INFINITY))[0];
+      .filter((item) => item.displayChannelMetric.yoyTwo != null)
+      .sort((a, b) => (a.displayChannelMetric.yoyTwo ?? Number.POSITIVE_INFINITY) - (b.displayChannelMetric.yoyTwo ?? Number.POSITIVE_INFINITY))[0];
 
     const basisLabel = cardMetricMode === "month" ? `${selectedMonth}월 당월` : `${selectedMonth}월 누적`;
     const lines: ReactNode[] = [
       <>
         <strong className="font-semibold text-stone-900">{basisLabel}</strong> 기준{" "}
-        <strong className="font-semibold text-stone-900">{overallCardTitle}</strong> 실판매출은{" "}
-        {renderTrendBadge(`${formatSalesCell(overallCardMetric.sales)} K HKD`, "stone")}이며,{" "}
-        {renderTrendMetricBadge("YOY", overallCardMetric.yoyPrev)}{" "}
-        {renderTrendMetricBadge("전전년비", overallCardMetric.yoyTwo)} 흐름입니다.
+        <strong className="font-semibold text-stone-900">{overallCardTitle}</strong> {getSalesLabel(tableBasisMode)}은{" "}
+        {renderTrendBadge(`${formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)} K HKD`, "stone")}이며,{" "}
+        {renderTrendMetricBadge("YOY", overallCardDisplayMetric.yoyPrev)}{" "}
+        {renderTrendMetricBadge("전전년비", overallCardDisplayMetric.yoyTwo)} 흐름입니다.
       </>,
     ];
 
@@ -424,11 +437,11 @@ export function DashboardShell({
       lines.push(
         <>
           성장 탄력은 <strong className="font-semibold text-stone-900">{strongestGrowth.channel}</strong>이 가장 강하며{" "}
-          {renderTrendMetricBadge("YOY", strongestGrowth.channelMetric.yoyPrev)}를 기록하고 있습니다.
+          {renderTrendMetricBadge("YOY", strongestGrowth.displayChannelMetric.yoyPrev)}를 기록하고 있습니다.
           {strongestGrowth.topSales ? (
             <>
               {" "}대표 매출 점포는 <strong className="font-semibold text-stone-900">{strongestGrowth.topSales.storeName}</strong>로{" "}
-              {renderTrendBadge(`${formatSalesCell(strongestGrowth.topSales.value)} K HKD`, "stone")}입니다.
+              {renderTrendBadge(`${formatMetricValue(strongestGrowth.topSales.value, tableBasisMode)} K HKD`, "stone")}입니다.
             </>
           ) : null}
         </>,
@@ -439,22 +452,22 @@ export function DashboardShell({
       lines.push(
         <>
           전전년비 기준 회복세는 <strong className="font-semibold text-stone-900">{strongestRecovery.channel}</strong>이 가장 두드러지며{" "}
-          {renderTrendMetricBadge("전전년비", strongestRecovery.channelMetric.yoyTwo)} 수준입니다.
+          {renderTrendMetricBadge("전전년비", strongestRecovery.displayChannelMetric.yoyTwo)} 수준입니다.
         </>,
       );
     }
 
-    if (softestRecovery && softestRecovery.channelMetric.yoyTwo != null && softestRecovery.channelMetric.yoyTwo < 0) {
+    if (softestRecovery && softestRecovery.displayChannelMetric.yoyTwo != null && softestRecovery.displayChannelMetric.yoyTwo < 0) {
       lines.push(
         <>
           반면 <strong className="font-semibold text-stone-900">{softestRecovery.channel}</strong>{topicParticle(softestRecovery.channel)}{" "}
-          {renderTrendMetricBadge("전전년비", softestRecovery.channelMetric.yoyTwo)}로, 추가 회복 여지가 남아 있습니다.
+          {renderTrendMetricBadge("전전년비", softestRecovery.displayChannelMetric.yoyTwo)}로, 추가 회복 여지가 남아 있습니다.
         </>,
       );
     }
 
     return lines.slice(0, 4);
-  }, [cardMetricMode, channelHighlights, overallCardMetric.sales, overallCardMetric.yoyPrev, overallCardMetric.yoyTwo, overallCardTitle, selectedMonth]);
+  }, [cardMetricMode, channelHighlights, overallCardDisplayMetric.sales, overallCardDisplayMetric.yoyPrev, overallCardDisplayMetric.yoyTwo, overallCardTitle, selectedMonth, tableBasisMode]);
 
   const dataStructureSections = useMemo(
     () => [
@@ -581,21 +594,33 @@ export function DashboardShell({
                     당월
                   </button>
                 </div>
-                <div className="inline-flex rounded-full border border-stone-300 bg-white p-1 shadow-sm">
-                  <button
-                    type="button"
-                    onClick={() => setTableBasisMode("sales")}
-                    className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "sales" ? "bg-stone-950 text-white" : "text-stone-600"}`}
-                  >
-                    실판매출
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTableBasisMode("perStore")}
-                    className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "perStore" ? "bg-stone-950 text-white" : "text-stone-600"}`}
-                  >
-                    점당매출
-                  </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="inline-flex rounded-full border border-stone-300 bg-white p-1 shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => setTableBasisMode("sales")}
+                      className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "sales" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+                    >
+                      실판매출
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTableBasisMode("tag")}
+                      className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "tag" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+                    >
+                      택가매출
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-2 py-1 shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => setTableBasisMode("perStore")}
+                      className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "perStore" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+                    >
+                      점당매출
+                    </button>
+                    <span className="pr-2 text-[11px] font-medium text-stone-500">실판매출 / 매장수</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -643,7 +668,7 @@ export function DashboardShell({
           <OverallSummaryCard
             title={overallCardTitle}
             basis={formatCardBasis(selectedMonth, cardMetricMode)}
-            salesLabel={tableBasisMode === "perStore" ? PER_STORE_SALES_LABEL : "실판매출"}
+            salesLabel={getSalesLabel(tableBasisMode)}
             salesValue={formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)}
             yoyValue={overallCardDisplayMetric.yoyPrev}
             yoyTwoValue={overallCardDisplayMetric.yoyTwo}
@@ -656,10 +681,10 @@ export function DashboardShell({
               key={item.channel}
               channel={item.channel}
               basis={formatCardBasis(selectedMonth, cardMetricMode)}
-              summaryValue={renderCardComparison(item.channel, item.channelMetric.yoyPrev, item.channelMetric.yoyTwo)}
+              summaryValue={renderCardComparison(item.channel, item.displayChannelMetric.yoyPrev, item.displayChannelMetric.yoyTwo)}
               salesLabel={TEXT.channelTopSales}
               yoyLabel={TEXT.channelTopYoy}
-              salesValue={item.topSales ? `${item.topSales.storeName} / ${formatSalesCell(item.topSales.value)} K HKD` : TEXT.noData}
+              salesValue={item.topSales ? `${item.topSales.storeName} / ${formatMetricValue(item.topSales.value, tableBasisMode)} K HKD` : TEXT.noData}
               salesDetail={item.topSales ? renderMetricComparison(item.topSales.yoyPrev, item.topSales.yoyTwo) : null}
               yoyValue={item.topYoy ? `${item.topYoy.storeName} / ${formatYoyRate(item.topYoy.value)}` : TEXT.noData}
               yoyDetail={item.topYoy ? renderMetricComparison(item.topYoy.value, item.topYoy.yoyTwo) : null}
@@ -862,15 +887,26 @@ export function DashboardShell({
   );
 }
 
-function createMetricCell(source: Record<string, number>, latestYear: number, month: number): CellMetric {
+function createMetricCell(
+  source: Record<string, number>,
+  tagSource: Record<string, number>,
+  latestYear: number,
+  month: number,
+): CellMetric {
   const sales = source[formatPeriod(latestYear, month)] ?? null;
   const previous = source[formatPeriod(latestYear - 1, month)] ?? null;
   const twoYears = source[formatPeriod(latestYear - 2, month)] ?? null;
+  const tagSales = tagSource[formatPeriod(latestYear, month)] ?? null;
+  const tagPrevious = tagSource[formatPeriod(latestYear - 1, month)] ?? null;
+  const tagTwoYears = tagSource[formatPeriod(latestYear - 2, month)] ?? null;
 
   return {
     sales,
     previousSales: previous,
     twoYearSales: twoYears,
+    tagSales,
+    tagPreviousSales: tagPrevious,
+    tagTwoYearSales: tagTwoYears,
     yoyPrev: sales != null && previous ? sales / previous - 1 : null,
     yoyTwo: sales != null && twoYears ? sales / twoYears - 1 : null,
     storeCount: sales != null ? (sales > 0 ? 1 : 0) : null,
@@ -879,15 +915,26 @@ function createMetricCell(source: Record<string, number>, latestYear: number, mo
   };
 }
 
-function createYtdMetric(source: Record<string, number>, latestYear: number, selectedMonth: number): CellMetric {
+function createYtdMetric(
+  source: Record<string, number>,
+  tagSource: Record<string, number>,
+  latestYear: number,
+  selectedMonth: number,
+): CellMetric {
   const current = sumPeriods(source, latestYear, selectedMonth);
   const previous = sumPeriods(source, latestYear - 1, selectedMonth);
   const twoYears = sumPeriods(source, latestYear - 2, selectedMonth);
+  const currentTag = sumPeriods(tagSource, latestYear, selectedMonth);
+  const previousTag = sumPeriods(tagSource, latestYear - 1, selectedMonth);
+  const twoYearsTag = sumPeriods(tagSource, latestYear - 2, selectedMonth);
 
   return {
     sales: current,
     previousSales: previous,
     twoYearSales: twoYears,
+    tagSales: currentTag,
+    tagPreviousSales: previousTag,
+    tagTwoYearSales: twoYearsTag,
     yoyPrev: current != null && previous ? current / previous - 1 : null,
     yoyTwo: current != null && twoYears ? current / twoYears - 1 : null,
     storeCount: calculateCumulativeStoreCount(source, latestYear, selectedMonth),
@@ -898,17 +945,24 @@ function createYtdMetric(source: Record<string, number>, latestYear: number, sel
 
 function createAnnualMetric(
   annualSource: Record<string, number>,
+  annualTagSource: Record<string, number>,
   monthlySource: Record<string, number>,
   latestYear: number,
 ): CellMetric {
   const sales = annualSource[String(latestYear)] ?? null;
   const previous = annualSource[String(latestYear - 1)] ?? null;
   const twoYears = annualSource[String(latestYear - 2)] ?? null;
+  const tagSales = annualTagSource[String(latestYear)] ?? null;
+  const tagPrevious = annualTagSource[String(latestYear - 1)] ?? null;
+  const tagTwoYears = annualTagSource[String(latestYear - 2)] ?? null;
 
   return {
     sales,
     previousSales: previous,
     twoYearSales: twoYears,
+    tagSales,
+    tagPreviousSales: tagPrevious,
+    tagTwoYearSales: tagTwoYears,
     yoyPrev: sales != null && previous ? sales / previous - 1 : null,
     yoyTwo: sales != null && twoYears ? sales / twoYears - 1 : null,
     storeCount: calculateCumulativeStoreCount(monthlySource, latestYear, 12),
@@ -965,12 +1019,18 @@ function aggregateMetricCells(metrics: CellMetric[]): CellMetric {
   const sales = metrics.reduce((sum, metric) => sum + (metric.sales ?? 0), 0);
   const previousSales = metrics.reduce((sum, metric) => sum + (metric.previousSales ?? 0), 0);
   const twoYearSales = metrics.reduce((sum, metric) => sum + (metric.twoYearSales ?? 0), 0);
+  const tagSales = metrics.reduce((sum, metric) => sum + (metric.tagSales ?? 0), 0);
+  const tagPreviousSales = metrics.reduce((sum, metric) => sum + (metric.tagPreviousSales ?? 0), 0);
+  const tagTwoYearSales = metrics.reduce((sum, metric) => sum + (metric.tagTwoYearSales ?? 0), 0);
   const storeCount = metrics.reduce((sum, metric) => sum + (metric.storeCount ?? 0), 0);
   const previousStoreCount = metrics.reduce((sum, metric) => sum + (metric.previousStoreCount ?? 0), 0);
   const twoYearStoreCount = metrics.reduce((sum, metric) => sum + (metric.twoYearStoreCount ?? 0), 0);
   const hasSales = metrics.some((metric) => metric.sales != null);
   const hasPreviousSales = metrics.some((metric) => metric.previousSales != null);
   const hasTwoYearSales = metrics.some((metric) => metric.twoYearSales != null);
+  const hasTagSales = metrics.some((metric) => metric.tagSales != null);
+  const hasTagPreviousSales = metrics.some((metric) => metric.tagPreviousSales != null);
+  const hasTagTwoYearSales = metrics.some((metric) => metric.tagTwoYearSales != null);
   const hasStoreCount = metrics.some((metric) => metric.storeCount != null);
   const hasPreviousStoreCount = metrics.some((metric) => metric.previousStoreCount != null);
   const hasTwoYearStoreCount = metrics.some((metric) => metric.twoYearStoreCount != null);
@@ -979,6 +1039,9 @@ function aggregateMetricCells(metrics: CellMetric[]): CellMetric {
     sales: hasSales ? sales : null,
     previousSales: hasPreviousSales ? previousSales : null,
     twoYearSales: hasTwoYearSales ? twoYearSales : null,
+    tagSales: hasTagSales ? tagSales : null,
+    tagPreviousSales: hasTagPreviousSales ? tagPreviousSales : null,
+    tagTwoYearSales: hasTagTwoYearSales ? tagTwoYearSales : null,
     yoyPrev: previousSales ? sales / previousSales - 1 : null,
     yoyTwo: twoYearSales ? sales / twoYearSales - 1 : null,
     storeCount: hasStoreCount ? storeCount : null,
@@ -1352,12 +1415,32 @@ function formatSalesCell(value: number | null | undefined) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(value));
 }
 
+function getBasisLabel(basisMode: TableBasisMode) {
+  if (basisMode === "perStore") return PER_STORE_BASIS_LABEL;
+  if (basisMode === "tag") return TAG_BASIS_LABEL;
+  return TEXT.salesBasis;
+}
+
+function getSalesLabel(basisMode: TableBasisMode) {
+  if (basisMode === "perStore") return PER_STORE_SALES_LABEL;
+  if (basisMode === "tag") return TAG_SALES_LABEL;
+  return "실판매출";
+}
+
 function getDisplayMetric(metric: CellMetric, basisMode: TableBasisMode) {
   if (basisMode === "sales") {
     return {
       sales: metric.sales,
       yoyPrev: metric.yoyPrev,
       yoyTwo: metric.yoyTwo,
+    };
+  }
+
+  if (basisMode === "tag") {
+    return {
+      sales: metric.tagSales,
+      yoyPrev: calculateRatioChange(metric.tagSales, metric.tagPreviousSales),
+      yoyTwo: calculateRatioChange(metric.tagSales, metric.tagTwoYearSales),
     };
   }
 
@@ -1513,7 +1596,3 @@ function pillTone(value: number | null | undefined) {
   if (value == null || Number.isNaN(value)) return "bg-stone-100 text-stone-600";
   return value >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700";
 }
-
-
-
-

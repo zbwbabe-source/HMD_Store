@@ -18,6 +18,7 @@ REGIONS = {
     "TW": {"TW"},
 }
 ACTUAL_SALES_ACCOUNT_NAME = "실매출액"
+TAG_SALES_ACCOUNT_NAME = "Tag매출액"
 
 
 def resolve_region(country: str) -> str | None:
@@ -87,19 +88,26 @@ def convert_amount(
     return amount * resolve_tw_rate(period_key, exchange_rates, reference_year=reference_year)
 
 
+def build_annual_totals(monthly_source: dict[str, float]) -> dict[str, float]:
+    annual_totals: dict[str, float] = defaultdict(float)
+    for period_key, amount in monthly_source.items():
+        annual_totals[period_key[:4]] += float(amount or 0.0)
+    return {year: round(total, 2) for year, total in sorted(annual_totals.items())}
+
+
 def load_excel_baseline(exchange_rates: dict[str, float], reference_year: int, actual_month: int) -> dict[str, dict[str, dict[str, object]]]:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     try:
         monthly_rows = conn.execute(
             """
-            SELECT brand, country, channel, store_code, store_name, period_key, SUM(CAST(amount AS REAL)) AS amount
+            SELECT brand, country, channel, store_code, store_name, period_key, account_name_clean, SUM(CAST(amount AS REAL)) AS amount
             FROM monthly_pnl
-            WHERE account_name_clean = ?
-            GROUP BY brand, country, channel, store_code, store_name, period_key
-            ORDER BY country, store_code, period_key
+            WHERE account_name_clean IN (?, ?)
+            GROUP BY brand, country, channel, store_code, store_name, period_key, account_name_clean
+            ORDER BY country, store_code, period_key, account_name_clean
             """,
-            (ACTUAL_SALES_ACCOUNT_NAME,),
+            (ACTUAL_SALES_ACCOUNT_NAME, TAG_SALES_ACCOUNT_NAME),
         ).fetchall()
     finally:
         conn.close()
@@ -120,6 +128,8 @@ def load_excel_baseline(exchange_rates: dict[str, float], reference_year: int, a
                 "storeName": row["store_name"],
                 "monthlySales": {},
                 "annualTotals": {},
+                "monthlyTagSales": {},
+                "annualTagTotals": {},
             },
         )
         period_key = str(row["period_key"])
@@ -134,7 +144,13 @@ def load_excel_baseline(exchange_rates: dict[str, float], reference_year: int, a
             exchange_rates,
             reference_year=reference_year,
         )
-        store["monthlySales"][period_key] = round(converted_amount, 2)
+        target_key = "monthlySales" if row["account_name_clean"] == ACTUAL_SALES_ACCOUNT_NAME else "monthlyTagSales"
+        store[target_key][period_key] = round(converted_amount, 2)
+
+    for region_payload in payload.values():
+        for store in region_payload.values():
+            store["annualTotals"] = build_annual_totals(dict(store.get("monthlySales", {})))
+            store["annualTagTotals"] = build_annual_totals(dict(store.get("monthlyTagSales", {})))
     return payload
 
 
@@ -188,6 +204,7 @@ def merge_sources(
         for store_code, store in region_payload.items():
             country = str(store["country"])
             monthly_sales: dict[str, float] = dict(store.get("monthlySales", {}))
+            monthly_tag_sales: dict[str, float] = dict(store.get("monthlyTagSales", {}))
             sql_months = sql_actuals.get(store_code, {})
 
             for period_key, raw_amount in sql_months.items():
@@ -198,12 +215,10 @@ def merge_sources(
                     continue
                 monthly_sales[period_key] = round(convert_amount(raw_amount, country, period_key, exchange_rates, reference_year=reference_year), 2)
 
-            annual_totals: dict[str, float] = defaultdict(float)
-            for period_key, amount in monthly_sales.items():
-                annual_totals[period_key[:4]] += float(amount or 0.0)
-
             store["monthlySales"] = dict(sorted(monthly_sales.items()))
-            store["annualTotals"] = {year: round(total, 2) for year, total in sorted(annual_totals.items())}
+            store["annualTotals"] = build_annual_totals(store["monthlySales"])
+            store["monthlyTagSales"] = dict(sorted(monthly_tag_sales.items()))
+            store["annualTagTotals"] = build_annual_totals(store["monthlyTagSales"])
 
     return payload
 
@@ -220,4 +235,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
