@@ -74,6 +74,7 @@ type TableBasisMode = "sales" | "perStore" | "tag";
 type SortDirection = "desc" | "asc";
 type CardMetricMode = "month" | "ytd" | "annual";
 type StoreTooltipMode = "month" | "ytd" | "annual";
+type Language = "kr" | "en";
 
 type TableRow = {
   kind: RowKind;
@@ -134,6 +135,127 @@ const TEXT = {
   storeDrilldown: "Store Drilldown",
 };
 
+const TEXT_EN = {
+  emptyRegion: "No region data available.",
+  title: "HK Store Sales / YoY",
+  intro: "Shows all 12 months, selected-month YTD, annual totals, and channel summaries in one view.",
+  period: "Base Month",
+  baseYear: "Base Year",
+  channelTopSales: "Top Sales",
+  channelTopYoy: "Top YOY",
+  topYoY: "Top YOY Store",
+  topSales: "Top Sales Store",
+  noData: "No data",
+  ytdBasisSuffix: "YTD Basis",
+  annualTable: "Store Sales Trend",
+  ytdRight: "A YTD column appears right after the selected month.",
+  country: "Cntry",
+  brand: "Brand",
+  channel: "Ch.",
+  store: "Store",
+  annualTotal: "Annual",
+  overallTotal: "Total",
+  countryTotal: "Cntry Tot.",
+  brandTotal: "Brand Tot.",
+  channelTotal: "Ch. Tot.",
+  viewYoy: "YOY Only",
+  viewSales: "Sales View",
+  expandAll: "Expand",
+  collapseAll: "Collapse",
+  unit: "Unit : 1k HKD",
+  emptyRows: "No monthly store data available.",
+  yoyPrev: "YOY",
+  yoyTwo: "vs 2YA",
+  salesBasis: "Net Sales Basis",
+  perStoreBasis: "Sales/Store Basis",
+  tagBasis: "Tag Sales Basis",
+  storeCount: "Store Cnt",
+  previousStoreCount: "Prev Store Cnt",
+  twoYearStoreCount: "2YA Store Cnt",
+  ytdAverageStoreCount: "YTD Avg Store Cnt",
+  annualAverageStoreCount: "Annual Avg Store Cnt",
+  storeCountYoy: "Store Cnt YOY",
+  storeCountTwoYear: "Store Cnt vs 2YA",
+  expand: "Expand",
+  collapse: "Collapse",
+  storeDrilldown: "Store Drilldown",
+} as const;
+
+const EXTRA_TEXT = {
+  kr: {
+    monthMode: "당월",
+    ytdMode: "누적",
+    annualMode: "연간",
+    salesValueLabel: "실판매출",
+    tagSalesLabel: "택가매출",
+    perStoreSalesLabel: "점당매출",
+    perStoreHint: "실판매출 / 매장수",
+    dataStructureButton: "데이터구조",
+    updatedAt: "Updated",
+    trendSummaryLabel: "Trend Summary",
+    trendSummaryTitle: "현재 현황과 추세",
+    dataStructureLabel: "Data Structure",
+    dataStructureTitle: "데이터구조",
+    dataStructureIntro: "이 화면에서 어떤 값이 SQL actual이고, 어디부터 Excel forecast인지 기준월 기준으로 정리했습니다.",
+    close: "닫기",
+    finalUpdateLog: "최종 업데이트 로그",
+    basePeriod: "기준월",
+    ruleBasis: "설명 기준",
+    ruleBasisValue: "SQL actual + Excel forecast 병합 기준",
+    discountRate: "할인율",
+    monthPerStoreFormula: "월 점당매출 계산식",
+    ytdPerStoreFormula: "YTD 가중평균월평균점당매출 계산식",
+    annualPerStoreFormula: "연간 가중평균월평균점당매출 계산식",
+    formulaDescriptionMonth: "당월 매출을 당월 매장수로 나눕니다.",
+    formulaDescriptionAggregate: "월별 매출 합계를 월별 매장수 합계로 나눈 가중평균 방식입니다.",
+    formulaExpression: "계산식",
+    salesTotal: "매출합계",
+    langKr: "KR",
+    langEn: "EN",
+  },
+  en: {
+    monthMode: "Month",
+    ytdMode: "YTD",
+    annualMode: "Annual",
+    salesValueLabel: "Net Sales",
+    tagSalesLabel: "Tag Sales",
+    perStoreSalesLabel: "Sales/Store",
+    perStoreHint: "Net / Store",
+    dataStructureButton: "Data Map",
+    updatedAt: "Updated",
+    trendSummaryLabel: "Trend Summary",
+    trendSummaryTitle: "Current Snapshot",
+    dataStructureLabel: "Data Structure",
+    dataStructureTitle: "Data Structure",
+    dataStructureIntro: "This view explains which values come from SQL actuals and where Excel forecast begins, based on the selected month.",
+    close: "Close",
+    finalUpdateLog: "Update Log",
+    basePeriod: "Base Period",
+    ruleBasis: "Rule Basis",
+    ruleBasisValue: "SQL actual + Excel forecast merge rule",
+    discountRate: "Disc. Rate",
+    monthPerStoreFormula: "Monthly sales/store formula",
+    ytdPerStoreFormula: "YTD weighted avg sales/store formula",
+    annualPerStoreFormula: "Annual weighted avg sales/store formula",
+    formulaDescriptionMonth: "Monthly sales divided by monthly store count.",
+    formulaDescriptionAggregate: "Weighted average based on monthly sales totals divided by monthly store-count totals.",
+    formulaExpression: "Formula",
+    salesTotal: "Sales Total",
+    langKr: "KR",
+    langEn: "EN",
+  },
+} as const;
+
+const BRAND_LABELS_EN: Record<string, string> = {
+  ALL: "All",
+  M: "MLB",
+  X: "DX",
+};
+
+const MONTH_NAMES_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
+type LocaleText = Record<string, string>;
+
 const REGION_LABELS: Record<string, string> = {
   HKMC: "HKMC",
   TW: "TW",
@@ -178,6 +300,8 @@ export function DashboardShell({
   const [showDataStructureModal, setShowDataStructureModal] = useState(false);
   const [sortMonth, setSortMonth] = useState<number | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [language, setLanguage] = useState<Language>("kr");
+  const text = useMemo<LocaleText>(() => (language === "en" ? { ...TEXT_EN, ...EXTRA_TEXT.en } : { ...TEXT, ...EXTRA_TEXT.kr }), [language]);
 
   const region = data.regions[regionKey];
   const latestYear = initialPeriod.year ?? getLatestYear(region?.latestPeriod);
@@ -211,7 +335,7 @@ export function DashboardShell({
   const periodOptions = useMemo(() => {
     return MONTH_OPTIONS.map((month) => ({
       value: month,
-      label: formatPeriodOptionLabel(latestYear, month),
+      label: formatPeriodOptionLabel(latestYear, month, language),
     }));
   }, [latestYear]);
 
@@ -287,7 +411,7 @@ export function DashboardShell({
         country: "전체",
         brand: "-",
         channel: "-",
-        storeName: TEXT.overallTotal,
+        storeName: text.overallTotal,
         rowKey: `${countryLabel}-overall-total`,
       }),
     );
@@ -305,7 +429,7 @@ export function DashboardShell({
           country,
           brand: "-",
           channel: "-",
-          storeName: TEXT.countryTotal,
+          storeName: text.countryTotal,
           rowKey: `${country}-country-total`,
         }),
       );
@@ -323,7 +447,7 @@ export function DashboardShell({
             country,
             brand,
             channel: "-",
-            storeName: TEXT.brandTotal,
+            storeName: text.brandTotal,
             rowKey: `${country}-${brand}-brand-total`,
           }),
         );
@@ -342,7 +466,7 @@ export function DashboardShell({
               country,
               brand,
               channel,
-              storeName: TEXT.channelTotal,
+              storeName: text.channelTotal,
               rowKey: `${toggleKey}-channel-total`,
               toggleKey,
             }),
@@ -356,9 +480,9 @@ export function DashboardShell({
     }
 
     return rows;
-  }, [countryLabel, expandedChannels, regionKey, sortDirection, sortMonth, tableBasisMode, tableRows, viewMode]);
+  }, [countryLabel, expandedChannels, regionKey, sortDirection, sortMonth, tableBasisMode, tableRows, text, viewMode]);
 
-  const unitBasisLabel = getBasisLabel(tableBasisMode);
+  const unitBasisLabel = getBasisLabel(tableBasisMode, language);
 
   const toggleAllChannels = () => {
     setExpandedChannels(Object.fromEntries(channelKeys.map((key) => [key, !allExpanded])));
@@ -373,10 +497,15 @@ export function DashboardShell({
   const overallCardDisplayMetric = useMemo(() => getDisplayMetric(overallCardMetric, tableBasisMode), [overallCardMetric, tableBasisMode]);
   const overallCardDiscountSummary = useMemo(() => getDiscountSummary(overallCardMetric), [overallCardMetric]);
   const overallCardTitle = useMemo(() => {
+    if (language === "en") {
+      if (regionKey === "HKMC") return "HK+Macau Total";
+      if (regionKey === "TW") return "Taiwan Total";
+      return `${countryLabel} Total`;
+    }
     if (regionKey === "HKMC") return "홍콩마카오 합계";
     if (regionKey === "TW") return "대만 전체";
     return `${countryLabel} 전체`;
-  }, [countryLabel, regionKey]);
+  }, [countryLabel, language, regionKey]);
 
   const channelHighlights = useMemo(() => {
     const grouped = new Map<string, TableRow[]>();
@@ -429,14 +558,66 @@ export function DashboardShell({
       .filter((item) => item.displayChannelMetric.yoyTwo != null)
       .sort((a, b) => (a.displayChannelMetric.yoyTwo ?? Number.POSITIVE_INFINITY) - (b.displayChannelMetric.yoyTwo ?? Number.POSITIVE_INFINITY))[0];
 
+    if (language === "en") {
+      const basisLabel = cardMetricMode === "month"
+        ? `${MONTH_NAMES_EN[selectedMonth - 1]} MTD`
+        : cardMetricMode === "annual"
+          ? `FY ${latestYear}`
+          : `YTD thru ${MONTH_NAMES_EN[selectedMonth - 1]}`;
+      const lines: ReactNode[] = [
+        <>
+          <strong className="font-semibold text-stone-900">{basisLabel}</strong>{" "}
+          <strong className="font-semibold text-stone-900">{overallCardTitle}</strong> is at{" "}
+          {renderTrendBadge(`${formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)} K HKD`, "stone")},{" "}
+          with {renderTrendMetricBadge("YOY", overallCardDisplayMetric.yoyPrev)} and{" "}
+          {renderTrendMetricBadge(text.yoyTwo, overallCardDisplayMetric.yoyTwo)}.
+        </>,
+      ];
+
+      if (strongestGrowth) {
+        lines.push(
+          <>
+            <strong className="font-semibold text-stone-900">{formatChannelGroupLabel(strongestGrowth.channel, language)}</strong> shows the strongest momentum at{" "}
+            {renderTrendMetricBadge("YOY", strongestGrowth.displayChannelMetric.yoyPrev)}.
+            {strongestGrowth.topSales ? (
+              <>
+                {" "}Its top-selling store is <strong className="font-semibold text-stone-900">{formatStoreName(strongestGrowth.topSales.storeName, language)}</strong>{" "}
+                at {renderTrendBadge(`${formatMetricValue(strongestGrowth.topSales.value, tableBasisMode)} K HKD`, "stone")}.
+              </>
+            ) : null}
+          </>,
+        );
+      }
+
+      if (strongestRecovery) {
+        lines.push(
+          <>
+            The strongest recovery vs 2YA is <strong className="font-semibold text-stone-900">{formatChannelGroupLabel(strongestRecovery.channel, language)}</strong>{" "}
+            at {renderTrendMetricBadge(text.yoyTwo, strongestRecovery.displayChannelMetric.yoyTwo)}.
+          </>,
+        );
+      }
+
+      if (softestRecovery && softestRecovery.displayChannelMetric.yoyTwo != null && softestRecovery.displayChannelMetric.yoyTwo < 0) {
+        lines.push(
+          <>
+            <strong className="font-semibold text-stone-900">{formatChannelGroupLabel(softestRecovery.channel, language)}</strong> remains softer at{" "}
+            {renderTrendMetricBadge(text.yoyTwo, softestRecovery.displayChannelMetric.yoyTwo)}, leaving more room to recover.
+          </>,
+        );
+      }
+
+      return lines.slice(0, 4);
+    }
+
     const basisLabel = cardMetricMode === "month" ? `${selectedMonth}월 당월` : cardMetricMode === "annual" ? `${latestYear}년 연간` : `${selectedMonth}월 누적`;
     const lines: ReactNode[] = [
       <>
         <strong className="font-semibold text-stone-900">{basisLabel}</strong> 기준{" "}
-        <strong className="font-semibold text-stone-900">{overallCardTitle}</strong> {getSalesLabel(tableBasisMode)}은{" "}
+        <strong className="font-semibold text-stone-900">{overallCardTitle}</strong> {getSalesLabel(tableBasisMode, language)}은{" "}
         {renderTrendBadge(`${formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)} K HKD`, "stone")}이며,{" "}
         {renderTrendMetricBadge("YOY", overallCardDisplayMetric.yoyPrev)}{" "}
-        {renderTrendMetricBadge("전전년비", overallCardDisplayMetric.yoyTwo)} 흐름입니다.
+        {renderTrendMetricBadge(text.yoyTwo, overallCardDisplayMetric.yoyTwo)} 흐름입니다.
       </>,
     ];
 
@@ -447,7 +628,7 @@ export function DashboardShell({
           {renderTrendMetricBadge("YOY", strongestGrowth.displayChannelMetric.yoyPrev)}를 기록하고 있습니다.
           {strongestGrowth.topSales ? (
             <>
-              {" "}대표 매출 점포는 <strong className="font-semibold text-stone-900">{strongestGrowth.topSales.storeName}</strong>로{" "}
+              {" "}대표 매출 점포는 <strong className="font-semibold text-stone-900">{formatStoreName(strongestGrowth.topSales.storeName, language)}</strong>로{" "}
               {renderTrendBadge(`${formatMetricValue(strongestGrowth.topSales.value, tableBasisMode)} K HKD`, "stone")}입니다.
             </>
           ) : null}
@@ -459,7 +640,7 @@ export function DashboardShell({
       lines.push(
         <>
           전전년비 기준 회복세는 <strong className="font-semibold text-stone-900">{strongestRecovery.channel}</strong>이 가장 두드러지며{" "}
-          {renderTrendMetricBadge("전전년비", strongestRecovery.displayChannelMetric.yoyTwo)} 수준입니다.
+          {renderTrendMetricBadge(text.yoyTwo, strongestRecovery.displayChannelMetric.yoyTwo)} 수준입니다.
         </>,
       );
     }
@@ -468,16 +649,53 @@ export function DashboardShell({
       lines.push(
         <>
           반면 <strong className="font-semibold text-stone-900">{softestRecovery.channel}</strong>{topicParticle(softestRecovery.channel)}{" "}
-          {renderTrendMetricBadge("전전년비", softestRecovery.displayChannelMetric.yoyTwo)}로, 추가 회복 여지가 남아 있습니다.
+          {renderTrendMetricBadge(text.yoyTwo, softestRecovery.displayChannelMetric.yoyTwo)}로, 추가 회복 여지가 남아 있습니다.
         </>,
       );
     }
 
     return lines.slice(0, 4);
-  }, [cardMetricMode, channelHighlights, latestYear, overallCardDisplayMetric.sales, overallCardDisplayMetric.yoyPrev, overallCardDisplayMetric.yoyTwo, overallCardTitle, selectedMonth, tableBasisMode]);
+  }, [cardMetricMode, channelHighlights, language, latestYear, overallCardDisplayMetric.sales, overallCardDisplayMetric.yoyPrev, overallCardDisplayMetric.yoyTwo, overallCardTitle, selectedMonth, tableBasisMode, text.yoyTwo]);
 
-  const dataStructureSections = useMemo(
-    () => [
+  const dataStructureSections = useMemo(() => {
+    if (language === "en") {
+      return [
+        {
+          title: "1. Excel Source",
+          items: [
+            "`Store_Rawdata.xlsx` is the base forecast source.",
+            "`scripts/import_store_rawdata.py` normalizes monthly and annual columns.",
+            "Normalized outputs are loaded into `data/normalized/*.csv` and `data/store_dashboard.sqlite`.",
+          ],
+        },
+        {
+          title: "2. SQL Actual",
+          items: [
+            "`scripts/fetch_snowflake_actuals.mjs` queries actual sales from Snowflake `SAP_FNF.DW_HMD_SALE_D`.",
+            "`scripts/export_store_monthly_sales_sql.py` pulls store-level monthly actual data.",
+            `The current base period is ${formatPeriod(latestYear, selectedMonth)}, so actuals are applied through that month.`,
+          ],
+        },
+        {
+          title: "3. Merge Rules",
+          items: [
+            "Years before the base year use SQL actuals.",
+            "In the base year, SQL actuals are used through the selected month and Excel forecast is used after that.",
+            "TW data applies exchange-rate rules during the merge and is aligned to HKD.",
+          ],
+        },
+        {
+          title: "4. Screen Output Data",
+          items: [
+            "`data/dashboard-data.json` provides `generatedAt`, `regions.monthly`, and `regions.storeYoyMultiYear` for cards, summaries, and YoY.",
+            "`app/page.tsx` runs `scripts/export_store_monthly_sales_sql.py` to build `storeMonthlySales` for the table.",
+            "Both the top summary and bottom table use the merged result from SQLite + SQL actual + Excel forecast.",
+          ],
+        },
+      ];
+    }
+
+    return [
       {
         title: "1. Excel 원본",
         items: [
@@ -491,7 +709,7 @@ export function DashboardShell({
         items: [
           "`scripts/fetch_snowflake_actuals.mjs`가 Snowflake `SAP_FNF.DW_HMD_SALE_D`에서 actual 매출을 조회합니다.",
           "`scripts/export_store_monthly_sales_sql.py`에서 매장별·월별 actual 데이터를 받아옵니다.",
-          "현재 화면 기준월은 " + formatPeriod(latestYear, selectedMonth) + " 이므로, 해당 월까지 actual 구간으로 처리됩니다.",
+          `현재 화면 기준월은 ${formatPeriod(latestYear, selectedMonth)} 이므로, 해당 월까지 actual 구간으로 처리됩니다.`,
         ],
       },
       {
@@ -506,13 +724,12 @@ export function DashboardShell({
         title: "4. 화면 반영 데이터",
         items: [
           "`data/dashboard-data.json`은 카드/요약/YoY용 `generatedAt`, `regions.monthly`, `regions.storeYoyMultiYear`를 제공합니다.",
-          "`app/page.tsx`는 `scripts/export_store_monthly_sales_sql.py`를 실행해 표용 `storeMonthlySales`를 만듭니다.",
-          "즉 상단 요약과 하단 테이블은 SQLite + SQL actual + Excel forecast를 합친 결과를 같이 사용합니다.",
+          "`app/page.tsx`는 `scripts/export_store_monthly_sales_sql.py`를 실행해 테이블 용 `storeMonthlySales`를 구성합니다.",
+          "상단 요약과 하단 테이블 모두 SQLite + SQL actual + Excel forecast를 병합한 결과를 사용합니다.",
         ],
       },
-    ],
-    [latestYear, selectedMonth],
-  );
+    ];
+  }, [language, latestYear, selectedMonth]);
 
   useEffect(() => {
     if (!showDataStructureModal) return;
@@ -531,7 +748,7 @@ export function DashboardShell({
     return (
       <main className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-4 py-10">
         <div className="rounded-[28px] border border-dashed border-stone-300 bg-white/75 px-8 py-10 text-center shadow-[0_20px_50px_rgba(65,46,24,0.08)]">
-          <p className="text-lg font-semibold text-stone-900">{TEXT.emptyRegion}</p>
+          <p className="text-lg font-semibold text-stone-900">{text.emptyRegion}</p>
         </div>
       </main>
     );
@@ -543,9 +760,9 @@ export function DashboardShell({
         <section className="sticky top-0 z-30 rounded-[28px] border border-white/70 bg-white/88 p-3 shadow-[0_16px_40px_rgba(65,46,24,0.10)] backdrop-blur-md md:p-4">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-stone-500">{TEXT.storeDrilldown}</p>
-              <h1 className="mt-1 font-serif text-[1.45rem] font-medium leading-none tracking-tight text-stone-900 md:text-[2.1rem]">{TEXT.title}</h1>
-              <p className="mt-1.5 max-w-3xl text-[13px] leading-5 text-stone-600">{TEXT.intro}</p>
+              <p className="text-xs uppercase tracking-[0.22em] text-stone-500">{text.storeDrilldown}</p>
+              <h1 className="mt-1 font-serif text-[1.45rem] font-medium leading-none tracking-tight text-stone-900 md:text-[2.1rem]">{text.title}</h1>
+              <p className="mt-1.5 max-w-3xl text-[13px] leading-5 text-stone-600">{text.intro}</p>
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 {regionKeys.map((key) => (
                   <ToggleButton
@@ -580,7 +797,7 @@ export function DashboardShell({
                   >
                     {availableBrands.map((brand) => (
                       <option key={brand} value={brand}>
-                        {BRAND_LABELS[brand] ?? brand}
+                        {(language === "en" ? BRAND_LABELS_EN[brand] : BRAND_LABELS[brand]) ?? brand}
                       </option>
                     ))}
                   </select>
@@ -591,21 +808,21 @@ export function DashboardShell({
                     onClick={() => setCardMetricMode("month")}
                     className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${cardMetricMode === "month" ? "bg-stone-950 text-white" : "text-stone-600"}`}
                   >
-                    당월
+                    {text.monthMode}
                   </button>
                   <button
                     type="button"
                     onClick={() => setCardMetricMode("ytd")}
                     className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${cardMetricMode === "ytd" ? "bg-stone-950 text-white" : "text-stone-600"}`}
                   >
-                    누적
+                    {text.ytdMode}
                   </button>
                   <button
                     type="button"
                     onClick={() => setCardMetricMode("annual")}
                     className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${cardMetricMode === "annual" ? "bg-stone-950 text-white" : "text-stone-600"}`}
                   >
-                    연간
+                    {text.annualMode}
                   </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -615,14 +832,14 @@ export function DashboardShell({
                       onClick={() => setTableBasisMode("sales")}
                       className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "sales" ? "bg-stone-950 text-white" : "text-stone-600"}`}
                     >
-                      실판매출
+                      {text.salesValueLabel}
                     </button>
                     <button
                       type="button"
                       onClick={() => setTableBasisMode("tag")}
                       className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "tag" ? "bg-stone-950 text-white" : "text-stone-600"}`}
                     >
-                      택가매출
+                      {text.tagSalesLabel}
                     </button>
                   </div>
                   <div className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-2 py-1 shadow-sm">
@@ -631,9 +848,9 @@ export function DashboardShell({
                       onClick={() => setTableBasisMode("perStore")}
                       className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${tableBasisMode === "perStore" ? "bg-stone-950 text-white" : "text-stone-600"}`}
                     >
-                      점당매출
+                      {text.perStoreSalesLabel}
                     </button>
-                    <span className="pr-2 text-[11px] font-medium text-stone-500">실판매출 / 매장수</span>
+                    <span className="pr-2 text-[11px] font-medium text-stone-500">{text.perStoreHint}</span>
                   </div>
                 </div>
               </div>
@@ -642,7 +859,7 @@ export function DashboardShell({
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-4">
                   <label htmlFor="period-select" className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                    {TEXT.period}
+                    {text.period}
                   </label>
                 <select
                   id="period-select"
@@ -660,19 +877,45 @@ export function DashboardShell({
                   ))}
                 </select>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowDataStructureModal(true)}
-                  className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-500 hover:bg-stone-100"
-                >
-                  데이터구조
-                </button>
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex rounded-full border border-sky-200 bg-sky-50/80 p-1 shadow-sm shadow-sky-100/80">
+                    <button
+                      type="button"
+                      onClick={() => setLanguage("kr")}
+                      className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+                        language === "kr"
+                          ? "bg-sky-600 text-white shadow-sm"
+                          : "text-sky-700 hover:bg-white/80"
+                      }`}
+                    >
+                      {text.langKr}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLanguage("en")}
+                      className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+                        language === "en"
+                          ? "bg-amber-500 text-white shadow-sm"
+                          : "text-amber-700 hover:bg-white/80"
+                      }`}
+                    >
+                      {text.langEn}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowDataStructureModal(true)}
+                    className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-500 hover:bg-stone-100"
+                  >
+                    {text.dataStructureButton}
+                  </button>
+                </div>
               </div>
               <div className="mt-2.5 text-sm text-stone-500">
                 <p>
-                  {TEXT.baseYear} <span className="font-semibold text-stone-800">{latestYear}</span>
+                  {text.baseYear} <span className="font-semibold text-stone-800">{latestYear}</span>
                 </p>
-                <p className="mt-1">Updated {formatTimestamp(data.generatedAt)}</p>
+                <p className="mt-1">{text.updatedAt} {formatTimestamp(data.generatedAt, language)}</p>
               </div>
             </div>
           </div>
@@ -681,8 +924,8 @@ export function DashboardShell({
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <OverallSummaryCard
             title={overallCardTitle}
-            basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear)}
-            salesLabel={getSalesLabel(tableBasisMode)}
+            basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
+            salesLabel={getSalesLabel(tableBasisMode, language)}
             salesValue={formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)}
             yoyValue={overallCardDisplayMetric.yoyPrev}
             yoyTwoValue={overallCardDisplayMetric.yoyTwo}
@@ -690,23 +933,26 @@ export function DashboardShell({
             discountSummary={overallCardDiscountSummary}
             basisMode={tableBasisMode}
             storeTooltipMode={cardMetricMode === "month" ? "month" : cardMetricMode === "annual" ? "annual" : "ytd"}
+            localeText={text}
+            language={language}
           />
           {channelHighlights.map((item) => (
             <ChannelHighlightCard
               key={item.channel}
-              channel={item.channel}
-              basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear)}
-              selectedSalesLabel={getSalesLabel(tableBasisMode)}
+              channel={formatChannelGroupLabel(item.channel, language)}
+              basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
+              selectedSalesLabel={getSalesLabel(tableBasisMode, language)}
               selectedSalesValue={`${formatMetricValue(item.displayChannelMetric.sales, tableBasisMode)} K HKD`}
               discountSummary={item.discountSummary}
-              summaryValue={renderCardComparison(item.channel, item.displayChannelMetric.yoyPrev, item.displayChannelMetric.yoyTwo)}
-              salesLabel={TEXT.channelTopSales}
-              yoyLabel={TEXT.channelTopYoy}
-              salesValue={item.topSales ? `${item.topSales.storeName} / ${formatMetricValue(item.topSales.value, tableBasisMode)} K HKD` : TEXT.noData}
-              salesDetail={item.topSales ? renderMetricComparison(item.topSales.yoyPrev, item.topSales.yoyTwo) : null}
-              yoyValue={item.topYoy ? `${item.topYoy.storeName} / ${formatYoyRate(item.topYoy.value)}` : TEXT.noData}
-              yoyDetail={item.topYoy ? renderMetricComparison(item.topYoy.value, item.topYoy.yoyTwo) : null}
+              summaryValue={renderCardComparison(item.channel, item.displayChannelMetric.yoyPrev, item.displayChannelMetric.yoyTwo, text.yoyTwo)}
+              salesLabel={text.channelTopSales}
+              yoyLabel={text.channelTopYoy}
+              salesValue={item.topSales ? `${formatStoreName(item.topSales.storeName, language)} / ${formatMetricValue(item.topSales.value, tableBasisMode)} K HKD` : text.noData}
+              salesDetail={item.topSales ? renderMetricComparison(item.topSales.yoyPrev, item.topSales.yoyTwo, text.yoyTwo) : null}
+              yoyValue={item.topYoy ? `${formatStoreName(item.topYoy.storeName, language)} / ${formatYoyRate(item.topYoy.value)}` : text.noData}
+              yoyDetail={item.topYoy ? renderMetricComparison(item.topYoy.value, item.topYoy.yoyTwo, text.yoyTwo) : null}
               yoyTone={item.topYoy?.value}
+              localeText={text}
             />
           ))}
         </section>
@@ -714,8 +960,8 @@ export function DashboardShell({
         <section className="rounded-[24px] border border-white/55 bg-white/80 p-5 shadow-[0_16px_36px_rgba(65,46,24,0.08)]">
           <div className="space-y-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Trend Summary</p>
-              <h3 className="mt-2 text-xl font-semibold text-stone-900">현재 현황과 추세</h3>
+              <p className="text-xs uppercase tracking-[0.2em] text-stone-500">{text.trendSummaryLabel}</p>
+              <h3 className="mt-2 text-xl font-semibold text-stone-900">{text.trendSummaryTitle}</h3>
             </div>
             <div className="space-y-2 text-sm leading-7 text-stone-600">
               {trendSummary.map((line, index) => (
@@ -730,23 +976,23 @@ export function DashboardShell({
             <div className="flex flex-wrap items-end gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.22em] text-stone-500">{countryLabel}</p>
-                <h2 className="mt-2 text-2xl font-semibold text-stone-900">{latestYear} {TEXT.annualTable}</h2>
+                <h2 className="mt-2 text-2xl font-semibold text-stone-900">{latestYear} {text.annualTable}</h2>
               </div>
               <div className="flex flex-wrap gap-2">
                 <ToggleButton
                   active={viewMode === "sales"}
                   onClick={() => setViewMode(viewMode === "yoy" ? "sales" : "yoy")}
                 >
-                  {viewMode === "yoy" ? TEXT.viewSales : TEXT.viewYoy}
+                  {viewMode === "yoy" ? text.viewSales : text.viewYoy}
                 </ToggleButton>
                 <ToggleButton active={allExpanded} onClick={toggleAllChannels}>
-                  {allExpanded ? TEXT.collapseAll : TEXT.expandAll}
+                  {allExpanded ? text.collapseAll : text.expandAll}
                 </ToggleButton>
               </div>
             </div>
             <div className="text-right text-sm text-stone-500">
-              <p>{TEXT.ytdRight}</p>
-              <p className="mt-1">{`${TEXT.unit} ${unitBasisLabel}`}</p>
+              <p>{text.ytdRight}</p>
+              <p className="mt-1">{`${text.unit} ${unitBasisLabel}`}</p>
             </div>
           </div>
 
@@ -755,10 +1001,10 @@ export function DashboardShell({
               <table className="w-full min-w-[1540px] table-fixed text-[11px] leading-4">
                 <thead className="bg-stone-100/95 text-stone-700">
                   <tr>
-                    <th className="w-[72px] px-2 py-3 text-left font-semibold">{TEXT.country}</th>
-                    <th className="w-[70px] px-2 py-3 text-left font-semibold">{TEXT.brand}</th>
-                    <th className="w-[88px] px-2 py-3 text-left font-semibold">{TEXT.channel}</th>
-                    <th className="w-[120px] px-2 py-3 text-left font-semibold">{TEXT.store}</th>
+                    <th className="w-[72px] px-2 py-3 text-left font-semibold">{text.country}</th>
+                    <th className="w-[70px] px-2 py-3 text-left font-semibold">{text.brand}</th>
+                    <th className="w-[88px] px-2 py-3 text-left font-semibold">{text.channel}</th>
+                    <th className="w-[120px] px-2 py-3 text-left font-semibold">{text.store}</th>
                     {MONTH_OPTIONS.map((month) => (
                       <Fragment key={`head-${month}`}>
                         <th className={`w-[82px] px-2 py-3 text-center font-semibold ${monthHeaderTone(month, selectedMonth)}`}>
@@ -774,7 +1020,7 @@ export function DashboardShell({
                             }}
                             className="w-full text-center"
                           >
-                            <div>{formatMonthHeaderLabel(month, selectedMonth)}{sortMonth === month ? (sortDirection === "desc" ? " ↓" : " ↑") : ""}</div>
+                            <div>{formatMonthHeaderLabel(month, selectedMonth, language)}{sortMonth === month ? (sortDirection === "desc" ? " ↓" : " ↑") : ""}</div>
                           </button>
                         </th>
                         {month === selectedMonth ? (
@@ -782,7 +1028,7 @@ export function DashboardShell({
                         ) : null}
                       </Fragment>
                     ))}
-                    <th className="w-[92px] bg-stone-200/70 px-2 py-3 text-center font-semibold">{TEXT.annualTotal}</th>
+                    <th className="w-[92px] bg-stone-200/70 px-2 py-3 text-center font-semibold">{text.annualTotal}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -794,9 +1040,9 @@ export function DashboardShell({
 
                       return (
                         <tr key={row.rowKey} className={`border-t border-stone-200/70 ${summaryRowClass(row.kind)}`}>
-                          <td className="px-2 py-2 font-medium text-stone-700">{row.country}</td>
+                          <td className="px-2 py-2 font-medium text-stone-700">{formatCountryLabel(row.country, language)}</td>
                           <td className="px-2 py-2 font-medium text-stone-700">{row.brand}</td>
-                          <td className="px-2 py-2 font-medium text-stone-700">{row.channel}</td>
+                          <td className="px-2 py-2 font-medium text-stone-700">{formatChannelLabel(row.channel, language)}</td>
                           <td className={`px-2 py-2 ${isSummaryRow ? "font-semibold text-stone-900" : "text-stone-900"}`}>
                             {isChannelTotal && row.toggleKey ? (
                               <button
@@ -810,32 +1056,32 @@ export function DashboardShell({
                                 <span className="inline-flex h-5 w-5 items-center justify-center text-xs text-stone-500">
                                   {isExpanded ? "▼" : "▶"}
                                 </span>
-                                <span>{row.storeName}</span>
+                                <span>{formatStoreName(row.storeName, language)}</span>
                               </button>
                             ) : (
-                              row.storeName
+                              formatStoreName(row.storeName, language)
                             )}
                           </td>
                           {row.months.map((month) => (
                             <Fragment key={`${row.rowKey}-${month.month}`}>
                               <td className={`px-2 py-2 align-top ${monthCellTone(month.month, selectedMonth)}`}>
-                                <MetricCell metric={month} emphasize={isSummaryRow} viewMode={viewMode} basisMode={tableBasisMode} storeTooltipMode="month" />
+                                <MetricCell metric={month} emphasize={isSummaryRow} viewMode={viewMode} basisMode={tableBasisMode} storeTooltipMode="month" localeText={text} language={language} />
                               </td>
                               {month.month === selectedMonth ? (
                                 <td className="bg-stone-200/80 px-2 py-2 align-top">
-                                  <MetricCell metric={row.ytd} emphasize viewMode={viewMode} basisMode={tableBasisMode} storeTooltipMode="ytd" />
+                                  <MetricCell metric={row.ytd} emphasize viewMode={viewMode} basisMode={tableBasisMode} storeTooltipMode="ytd" localeText={text} language={language} />
                                 </td>
                               ) : null}
                             </Fragment>
                           ))}
                           <td className="bg-stone-50/90 px-2 py-2 align-top">
-                            <MetricCell metric={row.annual} emphasize={isSummaryRow} viewMode={viewMode} basisMode={tableBasisMode} storeTooltipMode="annual" />
+                            <MetricCell metric={row.annual} emphasize={isSummaryRow} viewMode={viewMode} basisMode={tableBasisMode} storeTooltipMode="annual" localeText={text} language={language} />
                           </td>
                         </tr>
                       );
                     })
                   ) : (
-                    <EmptyRow colSpan={18} message={TEXT.emptyRows} />
+                    <EmptyRow colSpan={18} message={text.emptyRows} />
                   )}
                 </tbody>
               </table>
@@ -853,10 +1099,10 @@ export function DashboardShell({
           <section className="relative z-10 w-full max-w-4xl rounded-[28px] border border-white/60 bg-[#f7f3ec] p-5 shadow-[0_24px_80px_rgba(28,25,23,0.28)] md:p-6">
             <div className="flex items-start justify-between gap-4 border-b border-stone-200 pb-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-stone-500">Data Structure</p>
-                <h3 className="mt-2 text-2xl font-semibold text-stone-900">데이터구조</h3>
+                <p className="text-xs uppercase tracking-[0.22em] text-stone-500">{text.dataStructureLabel}</p>
+                <h3 className="mt-2 text-2xl font-semibold text-stone-900">{text.dataStructureTitle}</h3>
                 <p className="mt-2 text-sm leading-6 text-stone-600">
-                  이 화면에서 어떤 값이 SQL actual이고, 어디부터 Excel forecast인지 기준월 기준으로 정리했습니다.
+                  {text.dataStructureIntro}
                 </p>
               </div>
               <button
@@ -864,7 +1110,7 @@ export function DashboardShell({
                 onClick={() => setShowDataStructureModal(false)}
                 className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-500 hover:bg-stone-100"
               >
-                닫기
+                {text.close}
               </button>
             </div>
 
@@ -882,19 +1128,19 @@ export function DashboardShell({
             </div>
 
             <div className="mt-5 rounded-[22px] border border-stone-200 bg-white/90 p-4 shadow-sm">
-              <p className="text-base font-semibold text-stone-900">최종 업데이트 로그</p>
+              <p className="text-base font-semibold text-stone-900">{text.finalUpdateLog}</p>
               <div className="mt-3 grid gap-3 text-sm text-stone-600 md:grid-cols-3">
                 <div className="rounded-[18px] bg-stone-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-stone-400">기준월</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-stone-400">{text.basePeriod}</p>
                   <p className="mt-2 font-semibold text-stone-900">{formatPeriod(latestYear, selectedMonth)}</p>
                 </div>
                 <div className="rounded-[18px] bg-stone-50 px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.18em] text-stone-400">Dashboard JSON</p>
-                  <p className="mt-2 font-semibold text-stone-900">{formatTimestamp(data.generatedAt)}</p>
+                  <p className="mt-2 font-semibold text-stone-900">{formatTimestamp(data.generatedAt, language)}</p>
                 </div>
                 <div className="rounded-[18px] bg-stone-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-stone-400">설명 기준</p>
-                  <p className="mt-2 font-semibold text-stone-900">SQL actual + Excel forecast 병합 기준</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-stone-400">{text.ruleBasis}</p>
+                  <p className="mt-2 font-semibold text-stone-900">{text.ruleBasisValue}</p>
                 </div>
               </div>
             </div>
@@ -1107,6 +1353,8 @@ function OverallSummaryCard({
   discountSummary,
   basisMode = "sales",
   storeTooltipMode,
+  localeText,
+  language,
 }: {
   title: string;
   basis: string;
@@ -1118,21 +1366,25 @@ function OverallSummaryCard({
   discountSummary?: DiscountSummary;
   basisMode?: TableBasisMode;
   storeTooltipMode?: StoreTooltipMode;
+  localeText: LocaleText;
+  language: Language;
 }) {
   const showPerStoreFormulaTooltip =
     basisMode === "perStore" && salesMetric != null && storeTooltipMode != null && salesMetric.sales != null && salesMetric.storeCount != null;
   const formulaTooltipTitle =
     storeTooltipMode === "month"
-      ? "월 점당매출 계산식"
-      : "YTD 가중평균월평균점당매출 계산식";
+      ? localeText.monthPerStoreFormula
+      : storeTooltipMode === "annual"
+        ? localeText.annualPerStoreFormula
+        : localeText.ytdPerStoreFormula;
   const formulaTooltipCountLabel =
     storeTooltipMode === "month"
-      ? TEXT.storeCount
-      : YTD_STORE_COUNT_SUM_LABEL;
+      ? localeText.storeCount
+      : storeTooltipMode === "annual"
+        ? localeText.annualAverageStoreCount
+        : localeText.ytdAverageStoreCount;
   const formulaTooltipDescription =
-    storeTooltipMode === "month"
-      ? "당월 매출을 당월 매장수로 나눕니다."
-      : "월별 매출 합계를 월별 매장수 합계로 나눈 가중평균 방식입니다.";
+    storeTooltipMode === "month" ? localeText.formulaDescriptionMonth : localeText.formulaDescriptionAggregate;
 
   return (
     <article className="rounded-[24px] border border-white/55 bg-white/85 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
@@ -1141,7 +1393,7 @@ function OverallSummaryCard({
           <p className="text-base font-semibold leading-snug text-stone-900">{title}</p>
           <p className="mt-1 text-xs text-stone-400">{basis}</p>
         </div>
-        <DiscountSummaryBadge summary={discountSummary} />
+        <DiscountSummaryBadge summary={discountSummary} label={localeText.discountRate} />
       </div>
       <div className="mt-3 space-y-3">
         <div>
@@ -1151,17 +1403,17 @@ function OverallSummaryCard({
               <span className="group relative inline-flex cursor-help items-center justify-center">
                 <span className="border-b border-dotted border-stone-400/80">{salesValue} K HKD</span>
                 <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-72 -translate-x-1/2 rounded-[18px] border border-stone-200 bg-white px-3 py-3 text-left shadow-[0_12px_28px_rgba(28,25,23,0.16)] group-hover:block">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">Formula</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">{localeText.formulaExpression}</span>
                   <span className="mt-2 block text-[12px] font-semibold text-stone-900">{formulaTooltipTitle}</span>
                   <span className="mt-1 block text-[11px] leading-5 text-stone-600">{formulaTooltipDescription}</span>
                   <span className="mt-2 block text-[11px] font-medium text-stone-700">
-                    계산식 <span className="font-semibold text-stone-900">매출합계 / 매장수 합계</span>
+                    {localeText.formulaExpression} <span className="font-semibold text-stone-900">{localeText.salesTotal} / {formulaTooltipCountLabel}</span>
                   </span>
                   <span className="mt-1 block text-[11px] font-medium text-stone-600">
-                    매출합계 <span className="font-semibold text-stone-900">{formatSalesCell(salesMetric.sales)}</span>
+                    {localeText.salesTotal} <span className="font-semibold text-stone-900">{formatSalesCell(salesMetric?.sales)}</span>
                   </span>
                   <span className="mt-1 block text-[11px] font-medium text-stone-600">
-                    {formulaTooltipCountLabel} <span className="font-semibold text-stone-900">{formatStoreCount(salesMetric.storeCount, storeTooltipMode)}</span>
+                    {formulaTooltipCountLabel} <span className="font-semibold text-stone-900">{formatStoreCount(salesMetric?.storeCount, storeTooltipMode, language)}</span>
                   </span>
                 </span>
               </span>
@@ -1177,7 +1429,7 @@ function OverallSummaryCard({
           </p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-stone-400">전전년비</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-stone-400">{localeText.yoyTwo}</p>
           <p className="mt-1">
             <span className={`inline-flex rounded-full px-3 py-1 text-base font-semibold ${pillTone(yoyTwoValue)}`}>{formatYoyRate(yoyTwoValue)}</span>
           </p>
@@ -1201,6 +1453,7 @@ function ChannelHighlightCard({
   yoyValue,
   yoyDetail,
   yoyTone,
+  localeText,
 }: {
   channel: string;
   basis: string;
@@ -1215,6 +1468,7 @@ function ChannelHighlightCard({
   yoyValue: string;
   yoyDetail?: ReactNode;
   yoyTone?: number | null;
+  localeText: LocaleText;
 }) {
   return (
     <article className="rounded-[24px] border border-white/55 bg-white/85 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
@@ -1227,7 +1481,7 @@ function ChannelHighlightCard({
             <p className="mt-1 text-base font-semibold text-stone-900">{selectedSalesValue}</p>
           </div>
         </div>
-        <DiscountSummaryBadge summary={discountSummary} />
+        <DiscountSummaryBadge summary={discountSummary} label={localeText.discountRate} />
       </div>
       {summaryValue ? <p className="mt-2 text-[12px] font-semibold text-stone-600">{summaryValue}</p> : null}
       <div className="mt-3 space-y-3">
@@ -1252,12 +1506,16 @@ function MetricCell({
   viewMode,
   basisMode = "sales",
   storeTooltipMode,
+  localeText,
+  language,
 }: {
   metric: CellMetric;
   emphasize?: boolean;
   viewMode: ViewMode;
   basisMode?: TableBasisMode;
   storeTooltipMode?: StoreTooltipMode;
+  localeText: LocaleText;
+  language: Language;
 }) {
   const displayMetric = getDisplayMetric(metric, basisMode);
   const storeCountYoyPrev = calculateStoreCountChange(metric.storeCount, metric.previousStoreCount);
@@ -1266,10 +1524,10 @@ function MetricCell({
     storeTooltipMode != null && (metric.storeCount != null || metric.previousStoreCount != null || metric.twoYearStoreCount != null);
   const storeCountLabel =
     storeTooltipMode === "ytd"
-      ? YTD_STORE_COUNT_SUM_LABEL
+      ? localeText.ytdAverageStoreCount
       : storeTooltipMode === "annual"
-        ? ANNUAL_STORE_COUNT_SUM_LABEL
-        : TEXT.storeCount;
+        ? localeText.annualAverageStoreCount
+        : localeText.storeCount;
   const tooltipPositionClass =
     storeTooltipMode === "annual"
       ? "right-full top-1/2 mr-2 -translate-y-1/2"
@@ -1278,20 +1536,18 @@ function MetricCell({
     basisMode === "perStore" && viewMode === "sales" && storeTooltipMode != null && displayMetric.sales != null && metric.storeCount != null;
   const formulaTooltipTitle =
     storeTooltipMode === "month"
-      ? "월 점당매출 계산식"
+      ? localeText.monthPerStoreFormula
       : storeTooltipMode === "ytd"
-        ? "YTD 가중평균월평균점당매출 계산식"
-        : "연간 가중평균월평균점당매출 계산식";
+        ? localeText.ytdPerStoreFormula
+        : localeText.annualPerStoreFormula;
   const formulaTooltipCountLabel =
     storeTooltipMode === "month"
-      ? TEXT.storeCount
+      ? localeText.storeCount
       : storeTooltipMode === "ytd"
-        ? YTD_STORE_COUNT_SUM_LABEL
-        : ANNUAL_STORE_COUNT_SUM_LABEL;
+        ? localeText.ytdAverageStoreCount
+        : localeText.annualAverageStoreCount;
   const formulaTooltipDescription =
-    storeTooltipMode === "month"
-      ? "당월 매출을 당월 매장수로 나눕니다."
-      : "월별 매출 합계를 월별 매장수 합계로 나눈 가중평균 방식입니다.";
+    storeTooltipMode === "month" ? localeText.formulaDescriptionMonth : localeText.formulaDescriptionAggregate;
 
   return (
     <div>
@@ -1301,17 +1557,17 @@ function MetricCell({
             <div className="group relative inline-flex cursor-help items-center justify-center">
               <span className="border-b border-dotted border-stone-400/80">{formatMetricValue(displayMetric.sales, basisMode)}</span>
               <div className={`pointer-events-none absolute z-20 hidden w-72 rounded-[18px] border border-stone-200 bg-white px-3 py-3 text-left shadow-[0_12px_28px_rgba(28,25,23,0.16)] group-hover:block ${tooltipPositionClass}`}>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">Formula</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">{localeText.formulaExpression}</p>
                 <p className="mt-2 text-[12px] font-semibold text-stone-900">{formulaTooltipTitle}</p>
                 <p className="mt-1 text-[11px] leading-5 text-stone-600">{formulaTooltipDescription}</p>
                 <p className="mt-2 text-[11px] font-medium text-stone-700">
-                  계산식 <span className="font-semibold text-stone-900">매출합계 / 매장수 합계</span>
+                  {localeText.formulaExpression} <span className="font-semibold text-stone-900">{localeText.salesTotal} / {formulaTooltipCountLabel}</span>
                 </p>
                 <p className="mt-1 text-[11px] font-medium text-stone-600">
-                  매출합계 <span className="font-semibold text-stone-900">{formatSalesCell(metric.sales)}</span>
+                  {localeText.salesTotal} <span className="font-semibold text-stone-900">{formatSalesCell(metric.sales)}</span>
                 </p>
                 <p className="mt-1 text-[11px] font-medium text-stone-600">
-                  {formulaTooltipCountLabel} <span className="font-semibold text-stone-900">{formatStoreCount(metric.storeCount, storeTooltipMode)}</span>
+                  {formulaTooltipCountLabel} <span className="font-semibold text-stone-900">{formatStoreCount(metric.storeCount, storeTooltipMode, language)}</span>
                 </p>
               </div>
             </div>
@@ -1323,37 +1579,37 @@ function MetricCell({
       <div className={`text-center text-[12px] font-semibold ${viewMode === "sales" ? "mt-1 " : ""}${valueTone(displayMetric.yoyPrev)}`}>
         {canShowStoreTooltip ? (
           <div className="group relative inline-flex cursor-help items-center justify-center">
-            <span>{TEXT.yoyPrev} {formatYoyRate(displayMetric.yoyPrev)}</span>
+            <span>{localeText.yoyPrev} {formatYoyRate(displayMetric.yoyPrev)}</span>
             <div className={`pointer-events-none absolute z-20 hidden w-56 rounded-[18px] border border-stone-200 bg-white px-3 py-2 text-left shadow-[0_12px_28px_rgba(28,25,23,0.16)] group-hover:block ${tooltipPositionClass}`}>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">Store Count</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">{localeText.storeCount}</p>
               <p className="mt-2 text-[11px] font-medium text-stone-600">
-                {storeCountLabel} <span className="font-semibold text-stone-900">{formatStoreCount(metric.storeCount, storeTooltipMode)}</span>
+                {storeCountLabel} <span className="font-semibold text-stone-900">{formatStoreCount(metric.storeCount, storeTooltipMode, language)}</span>
               </p>
               <p className="mt-1 text-[11px] font-medium text-stone-600">
-                {TEXT.previousStoreCount} <span className="font-semibold text-stone-900">{formatStoreCount(metric.previousStoreCount, storeTooltipMode)}</span>
+                {localeText.previousStoreCount} <span className="font-semibold text-stone-900">{formatStoreCount(metric.previousStoreCount, storeTooltipMode, language)}</span>
                 <span className={`ml-2 ${valueTone(storeCountYoyPrev)}`}>YOY {formatYoyRate(storeCountYoyPrev)}</span>
               </p>
               <p className="mt-1 text-[11px] font-medium text-stone-600">
-                {TEXT.twoYearStoreCount} <span className="font-semibold text-stone-900">{formatStoreCount(metric.twoYearStoreCount, storeTooltipMode)}</span>
-                <span className={`ml-2 ${valueTone(storeCountYoyTwo)}`}>{TEXT.yoyTwo} {formatYoyRate(storeCountYoyTwo)}</span>
+                {localeText.twoYearStoreCount} <span className="font-semibold text-stone-900">{formatStoreCount(metric.twoYearStoreCount, storeTooltipMode, language)}</span>
+                <span className={`ml-2 ${valueTone(storeCountYoyTwo)}`}>{localeText.yoyTwo} {formatYoyRate(storeCountYoyTwo)}</span>
               </p>
             </div>
           </div>
         ) : (
-          <span>{TEXT.yoyPrev} {formatYoyRate(displayMetric.yoyPrev)}</span>
+          <span>{localeText.yoyPrev} {formatYoyRate(displayMetric.yoyPrev)}</span>
         )}
       </div>
-      <div className={`mt-1 text-center text-[9px] ${valueTone(displayMetric.yoyTwo)}`}>{TEXT.yoyTwo} {formatYoyRate(displayMetric.yoyTwo)}</div>
+      <div className={`mt-1 text-center text-[9px] ${valueTone(displayMetric.yoyTwo)}`}>{localeText.yoyTwo} {formatYoyRate(displayMetric.yoyTwo)}</div>
     </div>
   );
 }
 
-function DiscountSummaryBadge({ summary }: { summary?: DiscountSummary }) {
+function DiscountSummaryBadge({ summary, label }: { summary?: DiscountSummary; label: string }) {
   if (!summary || summary.rate == null) return null;
 
   return (
     <div className="text-right">
-      <p className="text-[11px] font-medium text-stone-400">할인율</p>
+      <p className="text-[11px] font-medium text-stone-400">{label}</p>
       <p className="mt-1 text-[13px] leading-none">
         <span className="font-semibold italic text-sky-700">{formatDiscountRate(summary.rate)}</span>
         {summary.deltaPp != null ? <span className="ml-1 text-[11px] font-semibold text-sky-600">{formatDiscountDelta(summary.deltaPp)}</span> : null}
@@ -1391,13 +1647,77 @@ function parseActualPeriod(value: string | undefined, fallbackMonth: number) {
   return { year: Number(match[1]) || null, month };
 }
 
-function formatPeriodOptionLabel(year: number, month: number) {
+function formatPeriodOptionLabel(year: number, month: number, language: Language = "kr") {
+  if (language === "en") {
+    return `${MONTH_NAMES_EN[month - 1]} '${String(year).slice(-2)}`;
+  }
   const shortYear = String(year).slice(-2);
   return `${shortYear}년 ${month}월`;
 }
 
-function formatMonthHeaderLabel(month: number, selectedMonth: number) {
+function formatMonthHeaderLabel(month: number, selectedMonth: number, language: Language = "kr") {
+  if (language === "en") {
+    const label = MONTH_NAMES_EN[month - 1];
+    return month > selectedMonth ? `${label} (E)` : label;
+  }
   return month > selectedMonth ? `${month}월 (e)` : `${month}월`;
+}
+
+function formatCountryLabel(country: string, language: Language = "kr") {
+  if (language !== "en") return country;
+  if (country === "홍콩") return "HK";
+  if (country === "마카오") return "Macau";
+  if (country === "전체") return "All";
+  return country;
+}
+
+function formatChannelLabel(channel: string, language: Language = "kr") {
+  if (language !== "en") return channel;
+  if (channel === "리테일") return "Retail";
+  if (channel === "아울렛") return "Outlet";
+  if (channel === "온라인") return "Online";
+  return channel;
+}
+
+function formatChannelGroupLabel(channel: string, language: Language = "kr") {
+  if (language !== "en") return channel;
+
+  const replacements: Array<[string, string]> = [
+    ["홍콩", "HK"],
+    ["마카오", "Macau"],
+    ["대만", "Taiwan"],
+    ["리테일", "Retail"],
+    ["아울렛", "Outlet"],
+    ["온라인", "Online"],
+  ];
+
+  let formatted = channel;
+  for (const [from, to] of replacements) {
+    formatted = formatted.replaceAll(from, to);
+  }
+  return formatted;
+}
+
+function formatStoreName(storeName: string, language: Language = "kr") {
+  if (language !== "en") return storeName;
+
+  const replacements: Array<[string, string]> = [
+    ["홍콩", "HK"],
+    ["마카오", "Macau"],
+    ["대만", "Taiwan"],
+    ["리테일", "Retail"],
+    ["아울렛", "Outlet"],
+    ["온라인", "Online"],
+    ["자사몰", "91APP"],
+    ["한신아레나", "Hanshin Arena"],
+    ["링커우아울렛", "Linkou Outlet"],
+  ];
+
+  let formatted = storeName;
+  for (const [from, to] of replacements) {
+    formatted = formatted.replaceAll(from, to);
+  }
+  return formatted;
 }
 
 function getStoreCountry(regionKey: string, storeCode: string, fallbackCountry: string) {
@@ -1495,15 +1815,25 @@ function formatSalesCell(value: number | null | undefined) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(value));
 }
 
-function getBasisLabel(basisMode: TableBasisMode) {
+function getBasisLabel(basisMode: TableBasisMode, language: Language = "kr") {
+  if (language === "en") {
+    if (basisMode === "perStore") return "Sales/Store Basis";
+    if (basisMode === "tag") return "Tag Sales Basis";
+    return "Net Sales Basis";
+  }
   if (basisMode === "perStore") return PER_STORE_BASIS_LABEL;
   if (basisMode === "tag") return TAG_BASIS_LABEL;
   return TEXT.salesBasis;
 }
 
-function getSalesLabel(basisMode: TableBasisMode) {
-  if (basisMode === "perStore") return PER_STORE_SALES_LABEL;
-  if (basisMode === "tag") return TAG_SALES_LABEL;
+function getSalesLabel(basisMode: TableBasisMode, language: Language = "kr") {
+  if (language === "en") {
+    if (basisMode === "perStore") return "Sales/Store";
+    if (basisMode === "tag") return "Tag Sales";
+    return "Net Sales";
+  }
+  if (basisMode === "perStore") return "점당매출";
+  if (basisMode === "tag") return "택가매출";
   return "실판매출";
 }
 
@@ -1547,7 +1877,7 @@ function formatPerStoreSalesCell(value: number | null | undefined) {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(value));
 }
 
-function formatStoreCount(value: number | null | undefined, mode?: StoreTooltipMode) {
+function formatStoreCount(value: number | null | undefined, mode?: StoreTooltipMode, language: Language = "kr") {
   if (value == null || Number.isNaN(value)) return "-";
   const useSingleDecimal = false;
   return new Intl.NumberFormat("en-US", {
@@ -1609,7 +1939,7 @@ function formatMetricComparison(yoyPrev: number | null | undefined, yoyTwo: numb
   return parts.join(", ");
 }
 
-function renderMetricComparison(yoyPrev: number | null | undefined, yoyTwo: number | null | undefined): ReactNode | null {
+function renderMetricComparison(yoyPrev: number | null | undefined, yoyTwo: number | null | undefined, yoyTwoLabel = "전전년비"): ReactNode | null {
   if ((yoyPrev == null || Number.isNaN(yoyPrev)) && (yoyTwo == null || Number.isNaN(yoyTwo))) {
     return null;
   }
@@ -1620,14 +1950,14 @@ function renderMetricComparison(yoyPrev: number | null | undefined, yoyTwo: numb
         <span className={`inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold ${pillTone(yoyPrev)}`}>YOY {formatYoyRate(yoyPrev)}</span>
       ) : null}
       {yoyTwo != null && !Number.isNaN(yoyTwo) ? (
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold ${pillTone(yoyTwo)}`}>전전년비 {formatYoyRate(yoyTwo)}</span>
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-[12px] font-semibold ${pillTone(yoyTwo)}`}>{yoyTwoLabel} {formatYoyRate(yoyTwo)}</span>
       ) : null}
     </span>
   );
 }
 
-function renderCardComparison(channel: string, yoyPrev: number | null | undefined, yoyTwo: number | null | undefined): ReactNode | null {
-  return renderMetricComparison(yoyPrev, yoyTwo);
+function renderCardComparison(channel: string, yoyPrev: number | null | undefined, yoyTwo: number | null | undefined, yoyTwoLabel = "전전년비"): ReactNode | null {
+  return renderMetricComparison(yoyPrev, yoyTwo, yoyTwoLabel);
 }
 
 function renderTrendBadge(label: string, tone: "stone" | "metric" = "metric", value?: number | null) {
@@ -1651,16 +1981,21 @@ function topicParticle(text: string) {
   return (lastChar - hangulBase) % 28 === 0 ? "는" : "은";
 }
 
-function formatCardBasis(selectedMonth: number, mode: CardMetricMode, latestYear: number) {
+function formatCardBasis(selectedMonth: number, mode: CardMetricMode, latestYear: number, language: Language = "kr") {
+  if (language === "en") {
+    if (mode === "month") return `${MONTH_NAMES_EN[selectedMonth - 1]} Basis`;
+    if (mode === "annual") return `FY ${latestYear}`;
+    return `YTD thru ${MONTH_NAMES_EN[selectedMonth - 1]}`;
+  }
   if (mode === "month") return `${selectedMonth}월 기준`;
   if (mode === "annual") return `${latestYear}년 연간 기준`;
   return `${selectedMonth}월 누적 기준`;
 }
 
-function formatTimestamp(value: string) {
+function formatTimestamp(value: string, language: Language = "kr") {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("ko-KR", {
+  return new Intl.DateTimeFormat(language === "en" ? "en-US" : "ko-KR", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -1678,3 +2013,4 @@ function pillTone(value: number | null | undefined) {
   if (value == null || Number.isNaN(value)) return "bg-stone-100 text-stone-600";
   return value >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700";
 }
+
