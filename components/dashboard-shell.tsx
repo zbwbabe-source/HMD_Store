@@ -696,6 +696,8 @@ export function DashboardShell({
               key={item.channel}
               channel={item.channel}
               basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear)}
+              selectedSalesLabel={getSalesLabel(tableBasisMode)}
+              selectedSalesValue={`${formatMetricValue(item.displayChannelMetric.sales, tableBasisMode)} K HKD`}
               discountSummary={item.discountSummary}
               summaryValue={renderCardComparison(item.channel, item.displayChannelMetric.yoyPrev, item.displayChannelMetric.yoyTwo)}
               salesLabel={TEXT.channelTopSales}
@@ -1188,6 +1190,8 @@ function OverallSummaryCard({
 function ChannelHighlightCard({
   channel,
   basis,
+  selectedSalesLabel,
+  selectedSalesValue,
   discountSummary,
   summaryValue,
   salesLabel,
@@ -1200,6 +1204,8 @@ function ChannelHighlightCard({
 }: {
   channel: string;
   basis: string;
+  selectedSalesLabel: string;
+  selectedSalesValue: string;
   discountSummary?: DiscountSummary;
   summaryValue: ReactNode | null;
   salesLabel: string;
@@ -1216,10 +1222,14 @@ function ChannelHighlightCard({
         <div>
           <p className="text-base font-semibold leading-snug text-stone-900">{channel}</p>
           <p className="mt-1 text-xs text-stone-400">{basis}</p>
+          <div className="mt-3">
+            <p className="text-xs uppercase tracking-[0.16em] text-stone-400">{selectedSalesLabel}</p>
+            <p className="mt-1 text-base font-semibold text-stone-900">{selectedSalesValue}</p>
+          </div>
         </div>
         <DiscountSummaryBadge summary={discountSummary} />
       </div>
-      {summaryValue ? <p className="mt-1 text-[12px] font-semibold text-stone-600">{summaryValue}</p> : null}
+      {summaryValue ? <p className="mt-2 text-[12px] font-semibold text-stone-600">{summaryValue}</p> : null}
       <div className="mt-3 space-y-3">
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-stone-400">{salesLabel}</p>
