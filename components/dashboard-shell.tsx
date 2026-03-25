@@ -59,6 +59,11 @@ type CellMetric = {
   twoYearStoreCount: number | null;
 };
 
+type DiscountSummary = {
+  rate: number | null;
+  deltaPp: number | null;
+};
+
 type MonthMetric = CellMetric & {
   month: number;
 };
@@ -67,7 +72,7 @@ type RowKind = "overall-total" | "country-total" | "brand-total" | "channel-tota
 type ViewMode = "yoy" | "sales";
 type TableBasisMode = "sales" | "perStore" | "tag";
 type SortDirection = "desc" | "asc";
-type CardMetricMode = "ytd" | "month";
+type CardMetricMode = "month" | "ytd" | "annual";
 type StoreTooltipMode = "month" | "ytd" | "annual";
 
 type TableRow = {
@@ -361,11 +366,12 @@ export function DashboardShell({
 
   const storeOnlyRows = tableRows;
   const getCardMetric = useMemo(
-    () => (row: TableRow) => (cardMetricMode === "month" ? row.months[selectedMonth - 1] : row.ytd),
+    () => (row: TableRow) => (cardMetricMode === "month" ? row.months[selectedMonth - 1] : cardMetricMode === "annual" ? row.annual : row.ytd),
     [cardMetricMode, selectedMonth],
   );
   const overallCardMetric = useMemo(() => aggregateMetricCells(storeOnlyRows.map((row) => getCardMetric(row))), [getCardMetric, storeOnlyRows]);
   const overallCardDisplayMetric = useMemo(() => getDisplayMetric(overallCardMetric, tableBasisMode), [overallCardMetric, tableBasisMode]);
+  const overallCardDiscountSummary = useMemo(() => getDiscountSummary(overallCardMetric), [overallCardMetric]);
   const overallCardTitle = useMemo(() => {
     if (regionKey === "HKMC") return "홍콩마카오 합계";
     if (regionKey === "TW") return "대만 전체";
@@ -407,7 +413,8 @@ export function DashboardShell({
         return best;
       }, null);
 
-      return { channel, channelMetric, displayChannelMetric, topYoy, topSales };
+      const discountSummary = getDiscountSummary(channelMetric);
+      return { channel, channelMetric, displayChannelMetric, topYoy, topSales, discountSummary };
     }).sort((a, b) => getChannelCardOrder(a.channel) - getChannelCardOrder(b.channel) || a.channel.localeCompare(b.channel));
   }, [getCardMetric, storeOnlyRows, tableBasisMode]);
 
@@ -422,7 +429,7 @@ export function DashboardShell({
       .filter((item) => item.displayChannelMetric.yoyTwo != null)
       .sort((a, b) => (a.displayChannelMetric.yoyTwo ?? Number.POSITIVE_INFINITY) - (b.displayChannelMetric.yoyTwo ?? Number.POSITIVE_INFINITY))[0];
 
-    const basisLabel = cardMetricMode === "month" ? `${selectedMonth}월 당월` : `${selectedMonth}월 누적`;
+    const basisLabel = cardMetricMode === "month" ? `${selectedMonth}월 당월` : cardMetricMode === "annual" ? `${latestYear}년 연간` : `${selectedMonth}월 누적`;
     const lines: ReactNode[] = [
       <>
         <strong className="font-semibold text-stone-900">{basisLabel}</strong> 기준{" "}
@@ -467,7 +474,7 @@ export function DashboardShell({
     }
 
     return lines.slice(0, 4);
-  }, [cardMetricMode, channelHighlights, overallCardDisplayMetric.sales, overallCardDisplayMetric.yoyPrev, overallCardDisplayMetric.yoyTwo, overallCardTitle, selectedMonth, tableBasisMode]);
+  }, [cardMetricMode, channelHighlights, latestYear, overallCardDisplayMetric.sales, overallCardDisplayMetric.yoyPrev, overallCardDisplayMetric.yoyTwo, overallCardTitle, selectedMonth, tableBasisMode]);
 
   const dataStructureSections = useMemo(
     () => [
@@ -581,6 +588,13 @@ export function DashboardShell({
                 <div className="inline-flex rounded-full border border-stone-300 bg-white p-1 shadow-sm">
                   <button
                     type="button"
+                    onClick={() => setCardMetricMode("month")}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${cardMetricMode === "month" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+                  >
+                    당월
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setCardMetricMode("ytd")}
                     className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${cardMetricMode === "ytd" ? "bg-stone-950 text-white" : "text-stone-600"}`}
                   >
@@ -588,10 +602,10 @@ export function DashboardShell({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCardMetricMode("month")}
-                    className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${cardMetricMode === "month" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+                    onClick={() => setCardMetricMode("annual")}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${cardMetricMode === "annual" ? "bg-stone-950 text-white" : "text-stone-600"}`}
                   >
-                    당월
+                    연간
                   </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
@@ -667,20 +681,22 @@ export function DashboardShell({
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <OverallSummaryCard
             title={overallCardTitle}
-            basis={formatCardBasis(selectedMonth, cardMetricMode)}
+            basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear)}
             salesLabel={getSalesLabel(tableBasisMode)}
             salesValue={formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)}
             yoyValue={overallCardDisplayMetric.yoyPrev}
             yoyTwoValue={overallCardDisplayMetric.yoyTwo}
             salesMetric={overallCardMetric}
+            discountSummary={overallCardDiscountSummary}
             basisMode={tableBasisMode}
-            storeTooltipMode={cardMetricMode === "month" ? "month" : "ytd"}
+            storeTooltipMode={cardMetricMode === "month" ? "month" : cardMetricMode === "annual" ? "annual" : "ytd"}
           />
           {channelHighlights.map((item) => (
             <ChannelHighlightCard
               key={item.channel}
               channel={item.channel}
-              basis={formatCardBasis(selectedMonth, cardMetricMode)}
+              basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear)}
+              discountSummary={item.discountSummary}
               summaryValue={renderCardComparison(item.channel, item.displayChannelMetric.yoyPrev, item.displayChannelMetric.yoyTwo)}
               salesLabel={TEXT.channelTopSales}
               yoyLabel={TEXT.channelTopYoy}
@@ -1086,6 +1102,7 @@ function OverallSummaryCard({
   yoyValue,
   yoyTwoValue,
   salesMetric,
+  discountSummary,
   basisMode = "sales",
   storeTooltipMode,
 }: {
@@ -1096,6 +1113,7 @@ function OverallSummaryCard({
   yoyValue: number | null;
   yoyTwoValue: number | null;
   salesMetric?: CellMetric;
+  discountSummary?: DiscountSummary;
   basisMode?: TableBasisMode;
   storeTooltipMode?: StoreTooltipMode;
 }) {
@@ -1116,9 +1134,12 @@ function OverallSummaryCard({
 
   return (
     <article className="rounded-[24px] border border-white/55 bg-white/85 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
-      <div>
-        <p className="text-base font-semibold leading-snug text-stone-900">{title}</p>
-        <p className="mt-1 text-xs text-stone-400">{basis}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-base font-semibold leading-snug text-stone-900">{title}</p>
+          <p className="mt-1 text-xs text-stone-400">{basis}</p>
+        </div>
+        <DiscountSummaryBadge summary={discountSummary} />
       </div>
       <div className="mt-3 space-y-3">
         <div>
@@ -1167,6 +1188,7 @@ function OverallSummaryCard({
 function ChannelHighlightCard({
   channel,
   basis,
+  discountSummary,
   summaryValue,
   salesLabel,
   yoyLabel,
@@ -1178,6 +1200,7 @@ function ChannelHighlightCard({
 }: {
   channel: string;
   basis: string;
+  discountSummary?: DiscountSummary;
   summaryValue: ReactNode | null;
   salesLabel: string;
   yoyLabel: string;
@@ -1189,8 +1212,13 @@ function ChannelHighlightCard({
 }) {
   return (
     <article className="rounded-[24px] border border-white/55 bg-white/85 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
-      <p className="text-base font-semibold leading-snug text-stone-900">{channel}</p>
-      <p className="mt-1 text-xs text-stone-400">{basis}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-base font-semibold leading-snug text-stone-900">{channel}</p>
+          <p className="mt-1 text-xs text-stone-400">{basis}</p>
+        </div>
+        <DiscountSummaryBadge summary={discountSummary} />
+      </div>
       {summaryValue ? <p className="mt-1 text-[12px] font-semibold text-stone-600">{summaryValue}</p> : null}
       <div className="mt-3 space-y-3">
         <div>
@@ -1310,6 +1338,20 @@ function MetricCell({
   );
 }
 
+function DiscountSummaryBadge({ summary }: { summary?: DiscountSummary }) {
+  if (!summary || summary.rate == null) return null;
+
+  return (
+    <div className="text-right">
+      <p className="text-[11px] font-medium text-stone-400">할인율</p>
+      <p className="mt-1 text-[13px] leading-none">
+        <span className="font-semibold italic text-sky-700">{formatDiscountRate(summary.rate)}</span>
+        {summary.deltaPp != null ? <span className="ml-1 text-[11px] font-semibold text-sky-600">{formatDiscountDelta(summary.deltaPp)}</span> : null}
+      </p>
+    </div>
+  );
+}
+
 function EmptyRow({ colSpan, message }: { colSpan: number; message: string }) {
   return (
     <tr>
@@ -1408,6 +1450,34 @@ function monthCellTone(month: number, selectedMonth: number) {
 function formatYoyRate(value: number | null | undefined) {
   if (value == null || Number.isNaN(value)) return "-";
   return `${Math.round((1 + value) * 100)}%`;
+}
+
+function formatDiscountRate(value: number | null | undefined) {
+  if (value == null || Number.isNaN(value)) return "-";
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function formatDiscountDelta(value: number | null | undefined) {
+  if (value == null || Number.isNaN(value)) return "-";
+  if (value > 0) return `+${value.toFixed(1)}%p`;
+  if (value < 0) return `${String.fromCharCode(0x25B3)}${Math.abs(value).toFixed(1)}%p`;
+  return `${value.toFixed(1)}%p`;
+}
+
+function calculateDiscountRate(sales: number | null | undefined, tagSales: number | null | undefined) {
+  if (sales == null || tagSales == null || Number.isNaN(sales) || Number.isNaN(tagSales) || tagSales === 0) {
+    return null;
+  }
+  return 1 - sales / tagSales;
+}
+
+function getDiscountSummary(metric: CellMetric): DiscountSummary {
+  const rate = calculateDiscountRate(metric.sales, metric.tagSales);
+  const previousRate = calculateDiscountRate(metric.previousSales, metric.tagPreviousSales);
+  return {
+    rate,
+    deltaPp: rate != null && previousRate != null ? (rate - previousRate) * 100 : null,
+  };
 }
 
 function formatSalesCell(value: number | null | undefined) {
@@ -1571,8 +1641,10 @@ function topicParticle(text: string) {
   return (lastChar - hangulBase) % 28 === 0 ? "는" : "은";
 }
 
-function formatCardBasis(selectedMonth: number, mode: CardMetricMode) {
-  return mode === "month" ? `${selectedMonth}월 기준` : `${selectedMonth}월 누적 기준`;
+function formatCardBasis(selectedMonth: number, mode: CardMetricMode, latestYear: number) {
+  if (mode === "month") return `${selectedMonth}월 기준`;
+  if (mode === "annual") return `${latestYear}년 연간 기준`;
+  return `${selectedMonth}월 누적 기준`;
 }
 
 function formatTimestamp(value: string) {
