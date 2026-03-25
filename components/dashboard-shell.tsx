@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -533,13 +533,13 @@ export function DashboardShell({
   return (
     <main className="mx-auto w-full max-w-[1860px] px-4 pt-0 pb-5 md:px-6 md:pt-0 md:pb-6">
       <div className="space-y-4">
-        <section className="sticky top-0 z-30 rounded-[28px] border border-white/70 bg-white/88 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)] backdrop-blur-md md:p-5">
+        <section className="sticky top-0 z-30 rounded-[28px] border border-white/70 bg-white/88 p-3 shadow-[0_16px_40px_rgba(65,46,24,0.10)] backdrop-blur-md md:p-4">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-stone-500">{TEXT.storeDrilldown}</p>
               <h1 className="mt-1 font-serif text-[1.45rem] font-medium leading-none tracking-tight text-stone-900 md:text-[2.1rem]">{TEXT.title}</h1>
-              <p className="mt-2 max-w-3xl text-[13px] leading-6 text-stone-600">{TEXT.intro}</p>
-              <div className="mt-3 flex flex-wrap items-center gap-2.5">
+              <p className="mt-1.5 max-w-3xl text-[13px] leading-5 text-stone-600">{TEXT.intro}</p>
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 {regionKeys.map((key) => (
                   <ToggleButton
                     compact
@@ -556,7 +556,7 @@ export function DashboardShell({
                     {REGION_LABELS[key] ?? key}
                   </ToggleButton>
                 ))}
-                <div className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-3.5 py-2.5 shadow-sm">
+                <div className="flex items-center gap-2 rounded-full border border-stone-300 bg-white px-3.5 py-2 shadow-sm">
                   <label htmlFor="brand-select" className="text-sm font-semibold text-stone-600">
                     Brand
                   </label>
@@ -624,7 +624,7 @@ export function DashboardShell({
                 </div>
               </div>
             </div>
-            <div className="min-w-[420px] rounded-[28px] border border-stone-200/70 bg-stone-50/90 p-5 shadow-inner shadow-stone-900/5 md:min-w-[500px]">
+            <div className="min-w-[420px] rounded-[28px] border border-stone-200/70 bg-stone-50/90 p-4 shadow-inner shadow-stone-900/5 md:min-w-[500px]">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-4">
                   <label htmlFor="period-select" className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
@@ -637,7 +637,7 @@ export function DashboardShell({
                   onChange={(event) => {
                     void handleActualPeriodChange(Number(event.target.value));
                   }}
-                  className={`rounded-full border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-800 outline-none transition focus:border-emerald-600 ${canEditPeriod ? "" : "cursor-not-allowed bg-stone-100 text-stone-500"}`}
+                  className={`rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-800 outline-none transition focus:border-emerald-600 ${canEditPeriod ? "" : "cursor-not-allowed bg-stone-100 text-stone-500"}`}
                 >
                   {periodOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -649,12 +649,12 @@ export function DashboardShell({
                 <button
                   type="button"
                   onClick={() => setShowDataStructureModal(true)}
-                  className="rounded-full border border-stone-300 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-500 hover:bg-stone-100"
+                  className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-500 hover:bg-stone-100"
                 >
                   데이터구조
                 </button>
               </div>
-              <div className="mt-4 text-sm text-stone-500">
+              <div className="mt-2.5 text-sm text-stone-500">
                 <p>
                   {TEXT.baseYear} <span className="font-semibold text-stone-800">{latestYear}</span>
                 </p>
