@@ -202,7 +202,7 @@ const EXTRA_TEXT = {
     finalUpdateLog: "최종 업데이트 로그",
     basePeriod: "기준월",
     ruleBasis: "설명 기준",
-    ruleBasisValue: "SQL actual + Excel forecast 병합 기준",
+    ruleBasisValue: "SQL actual + Excel forecast 병합 + TW 환율/할인율 규칙 기준",
     discountRate: "할인율",
     monthPerStoreFormula: "월 점당매출 계산식",
     ytdPerStoreFormula: "YTD 가중평균월평균점당매출 계산식",
@@ -233,7 +233,7 @@ const EXTRA_TEXT = {
     finalUpdateLog: "Update Log",
     basePeriod: "Base Period",
     ruleBasis: "Rule Basis",
-    ruleBasisValue: "SQL actual + Excel forecast merge rule",
+    ruleBasisValue: "SQL actual + Excel forecast merge + TW FX/discount rules",
     discountRate: "Disc. Rate",
     monthPerStoreFormula: "Monthly sales/store formula",
     ytdPerStoreFormula: "YTD weighted avg sales/store formula",
@@ -574,7 +574,8 @@ export function DashboardShell({
   );
   const overallCardMetric = useMemo(() => aggregateMetricCells(storeOnlyRows.map((row) => getCardMetric(row))), [getCardMetric, storeOnlyRows]);
   const overallCardDisplayMetric = useMemo(() => getDisplayMetric(overallCardMetric, tableBasisMode), [overallCardMetric, tableBasisMode]);
-  const overallCardDiscountSummary = useMemo(() => getDiscountSummary(overallCardMetric), [overallCardMetric]);
+  const discountVatFactor = regionKey === "TW" ? 1.05 : 1;
+  const overallCardDiscountSummary = useMemo(() => getDiscountSummary(overallCardMetric, discountVatFactor), [discountVatFactor, overallCardMetric]);
   const overallCardTitle = useMemo(() => {
     if (language === "en") {
       if (regionKey === "HKMC") return "HK+Macau Total";
@@ -621,10 +622,10 @@ export function DashboardShell({
         return best;
       }, null);
 
-      const discountSummary = getDiscountSummary(channelMetric);
+      const discountSummary = getDiscountSummary(channelMetric, discountVatFactor);
       return { channel, channelMetric, displayChannelMetric, topYoy, topSales, discountSummary };
     }).sort((a, b) => getChannelCardOrder(a.channel) - getChannelCardOrder(b.channel) || a.channel.localeCompare(b.channel));
-  }, [getCardMetric, storeOnlyRows, tableBasisMode]);
+  }, [discountVatFactor, getCardMetric, storeOnlyRows, tableBasisMode]);
 
   const trendSummary = useMemo(() => {
     const strongestGrowth = channelHighlights
@@ -750,8 +751,8 @@ export function DashboardShell({
         {
           title: "2. SQL Actual",
           items: [
-            "`scripts/fetch_snowflake_actuals.mjs` queries actual sales from Snowflake `SAP_FNF.DW_HMD_SALE_D`.",
-            "`scripts/export_store_monthly_sales_sql.py` pulls store-level monthly actual data.",
+            "`scripts/fetch_snowflake_actuals.mjs` queries actual sales from Snowflake `SAP_FNF.DW_HMD_SALE_D` using `ACT_SALE_AMT`.",
+            "`scripts/export_store_monthly_sales_sql.py` merges store-level SQL actuals with the dashboard baseline.",
             `The current base period is ${formatPeriod(latestYear, selectedMonth)}, so actuals are applied through that month.`,
           ],
         },
@@ -760,15 +761,15 @@ export function DashboardShell({
           items: [
             "Years before the base year use SQL actuals.",
             "In the base year, SQL actuals are used through the selected month and Excel forecast is used after that.",
-            "TW data applies exchange-rate rules during the merge and is aligned to HKD.",
+            "TW supports monthly exchange-rate overrides in non-production, converts HKD/TWD on screen, and applies the TW discount formula with VAT.",
           ],
         },
         {
           title: "4. Screen Output Data",
           items: [
             "`data/dashboard-data.json` provides `generatedAt`, `regions.monthly`, and `regions.storeYoyMultiYear` for cards, summaries, and YoY.",
-            "`app/page.tsx` runs `scripts/export_store_monthly_sales_sql.py` to build `storeMonthlySales` for the table.",
-            "Both the top summary and bottom table use the merged result from SQLite + SQL actual + Excel forecast.",
+            "`app/page.tsx` loads CSV rates plus saved TW monthly overrides and passes them to the dashboard shell.",
+            "The summary cards and table reflect SQLite + SQL actual + Excel forecast, plus TW exchange-rate and discount rules.",
           ],
         },
       ];
@@ -786,8 +787,8 @@ export function DashboardShell({
       {
         title: "2. SQL actual",
         items: [
-          "`scripts/fetch_snowflake_actuals.mjs`가 Snowflake `SAP_FNF.DW_HMD_SALE_D`에서 actual 매출을 조회합니다.",
-          "`scripts/export_store_monthly_sales_sql.py`에서 매장별·월별 actual 데이터를 받아옵니다.",
+          "`scripts/fetch_snowflake_actuals.mjs`가 Snowflake `SAP_FNF.DW_HMD_SALE_D`의 `ACT_SALE_AMT`로 actual 매출을 조회합니다.",
+          "`scripts/export_store_monthly_sales_sql.py`에서 매장별·월별 SQL actual과 대시보드 기준 데이터를 병합합니다.",
           `현재 화면 기준월은 ${formatPeriod(latestYear, selectedMonth)} 이므로, 해당 월까지 actual 구간으로 처리됩니다.`,
         ],
       },
@@ -796,15 +797,15 @@ export function DashboardShell({
         items: [
           "기준 연도 이전 연도는 SQL actual을 사용합니다.",
           "기준 연도에서는 선택한 기준월까지 SQL actual, 이후 월은 Excel forecast를 사용합니다.",
-          "TW 데이터는 병합 과정에서 환율 규칙을 적용해 HKD 기준으로 맞춥니다.",
+          "TW 데이터는 개발환경에서 월별 환율을 수정할 수 있고, 화면에서는 HKD/TWD 전환과 TW 전용 할인율(VAT 포함) 규칙을 적용합니다.",
         ],
       },
       {
         title: "4. 화면 반영 데이터",
         items: [
           "`data/dashboard-data.json`은 카드/요약/YoY용 `generatedAt`, `regions.monthly`, `regions.storeYoyMultiYear`를 제공합니다.",
-          "`app/page.tsx`는 `scripts/export_store_monthly_sales_sql.py`를 실행해 테이블 용 `storeMonthlySales`를 구성합니다.",
-          "상단 요약과 하단 테이블 모두 SQLite + SQL actual + Excel forecast를 병합한 결과를 사용합니다.",
+          "`app/page.tsx`는 CSV 환율과 저장된 TW 월별 환율 설정을 함께 불러와 화면에 전달합니다.",
+          "상단 요약과 하단 테이블 모두 SQLite + SQL actual + Excel forecast 병합 결과에 TW 환율/할인율 규칙을 반영해 사용합니다.",
         ],
       },
     ];
@@ -1971,16 +1972,16 @@ function formatDiscountDelta(value: number | null | undefined) {
   return `${value.toFixed(1)}%p`;
 }
 
-function calculateDiscountRate(sales: number | null | undefined, tagSales: number | null | undefined) {
+function calculateDiscountRate(sales: number | null | undefined, tagSales: number | null | undefined, vatFactor = 1) {
   if (sales == null || tagSales == null || Number.isNaN(sales) || Number.isNaN(tagSales) || tagSales === 0) {
     return null;
   }
-  return 1 - sales / tagSales;
+  return 1 - (sales * vatFactor) / tagSales;
 }
 
-function getDiscountSummary(metric: CellMetric): DiscountSummary {
-  const rate = calculateDiscountRate(metric.sales, metric.tagSales);
-  const previousRate = calculateDiscountRate(metric.previousSales, metric.tagPreviousSales);
+function getDiscountSummary(metric: CellMetric, vatFactor = 1): DiscountSummary {
+  const rate = calculateDiscountRate(metric.sales, metric.tagSales, vatFactor);
+  const previousRate = calculateDiscountRate(metric.previousSales, metric.tagPreviousSales, vatFactor);
   return {
     rate,
     deltaPp: rate != null && previousRate != null ? (rate - previousRate) * 100 : null,

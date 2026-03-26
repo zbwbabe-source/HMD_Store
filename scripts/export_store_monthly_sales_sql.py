@@ -228,7 +228,14 @@ def merge_sources(
                 use_sql = year < actual_year or (year == actual_year and month <= actual_month)
                 if not use_sql:
                     continue
-                monthly_sales[period_key] = round(convert_amount(raw_amount, country, period_key, exchange_rates, reference_year=reference_year), 2)
+
+                baseline_sales = monthly_sales.get(period_key)
+                baseline_tag_sales = monthly_tag_sales.get(period_key)
+                converted_sales = round(convert_amount(raw_amount, country, period_key, exchange_rates, reference_year=reference_year), 2)
+                monthly_sales[period_key] = converted_sales
+
+                if baseline_sales not in (None, 0) and baseline_tag_sales is not None:
+                    monthly_tag_sales[period_key] = round(converted_sales * (baseline_tag_sales / baseline_sales), 2)
 
             store["monthlySales"] = dict(sorted(monthly_sales.items()))
             store["annualTotals"] = build_annual_totals(store["monthlySales"])
