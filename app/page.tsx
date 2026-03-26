@@ -20,10 +20,10 @@ function loadStoreMonthlySales() {
 
 function loadViewSettings() {
   const settingsPath = join(process.cwd(), "data", "store-view-settings.json");
-  return JSON.parse(readFileSync(settingsPath, "utf-8")) as { actualPeriod?: string };
+  return JSON.parse(readFileSync(settingsPath, "utf-8")) as { actualPeriod?: string; twExchangeRates?: Record<string, number> };
 }
 
-function loadTwExchangeRates() {
+function loadTwExchangeRates(overrides?: Record<string, number>) {
   const exchangeRatePath = join(process.cwd(), "TW_Exchange Rate.csv");
   const raw = readFileSync(exchangeRatePath, "utf-8").replace(/^\uFEFF/, "");
   const lines = raw.split(/\r?\n/).slice(1);
@@ -38,7 +38,7 @@ function loadTwExchangeRates() {
     rates[period] = rate;
   }
 
-  return rates;
+  return { ...rates, ...(overrides ?? {}) };
 }
 
 export default function Home() {
@@ -46,7 +46,7 @@ export default function Home() {
   const data = JSON.parse(readFileSync(dataPath, "utf-8"));
   const storeMonthlySales = loadStoreMonthlySales();
   const viewSettings = loadViewSettings();
-  const twExchangeRates = loadTwExchangeRates();
+  const twExchangeRates = loadTwExchangeRates(viewSettings.twExchangeRates);
 
   return (
     <DashboardShell

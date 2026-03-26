@@ -28,9 +28,12 @@ def resolve_region(country: str) -> str | None:
     return None
 
 
-def load_actual_period() -> tuple[int, int]:
-    payload = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
-    raw = str(payload.get("actualPeriod") or "")
+def load_settings() -> dict[str, object]:
+    return json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+
+
+def load_actual_period(settings: dict[str, object]) -> tuple[int, int]:
+    raw = str(settings.get("actualPeriod") or "")
     year_text, month_text = raw.split("-", 1)
     year = int(year_text)
     month = int(month_text)
@@ -39,7 +42,7 @@ def load_actual_period() -> tuple[int, int]:
     return year, month
 
 
-def load_tw_exchange_rates() -> dict[str, float]:
+def load_tw_exchange_rates(settings: dict[str, object]) -> dict[str, float]:
     rates: dict[str, float] = {}
     with EXCHANGE_RATE_CSV.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.reader(handle)
@@ -52,6 +55,18 @@ def load_tw_exchange_rates() -> dict[str, float]:
             if not period or not rate_raw:
                 continue
             rates[period] = float(rate_raw)
+
+    overrides = settings.get("twExchangeRates")
+    if isinstance(overrides, dict):
+        for period, rate in overrides.items():
+            period_key = str(period).strip()
+            try:
+                rate_value = float(rate)
+            except (TypeError, ValueError):
+                continue
+            if period_key:
+                rates[period_key] = rate_value
+
     return rates
 
 
@@ -224,8 +239,9 @@ def merge_sources(
 
 
 def main() -> None:
-    actual_year, actual_month = load_actual_period()
-    exchange_rates = load_tw_exchange_rates()
+    settings = load_settings()
+    actual_year, actual_month = load_actual_period(settings)
+    exchange_rates = load_tw_exchange_rates(settings)
     payload = load_excel_baseline(exchange_rates, reference_year=actual_year, actual_month=actual_month)
     store_dimensions = flatten_store_dimensions(payload)
     sql_actuals = fetch_sql_actuals(store_dimensions, actual_year, actual_month)

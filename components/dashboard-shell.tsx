@@ -305,6 +305,10 @@ export function DashboardShell({
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [language, setLanguage] = useState<Language>("kr");
   const [currencyMode, setCurrencyMode] = useState<CurrencyMode>("HKD");
+  const [editableTwExchangeRates, setEditableTwExchangeRates] = useState(twExchangeRates);
+  const [showRateEditor, setShowRateEditor] = useState(false);
+  const [rateDrafts, setRateDrafts] = useState<Record<string, string>>({});
+  const [isSavingRates, setIsSavingRates] = useState(false);
   const text = useMemo<LocaleText>(() => (language === "en" ? { ...TEXT_EN, ...EXTRA_TEXT.en } : { ...TEXT, ...EXTRA_TEXT.kr }), [language]);
 
   const region = data.regions[regionKey];
@@ -314,17 +318,18 @@ export function DashboardShell({
   const countryLabel = REGION_LABELS[regionKey] ?? regionKey;
   const effectiveCurrencyMode: CurrencyMode = regionKey === "TW" ? currencyMode : "HKD";
   const currencyUnitLabel = effectiveCurrencyMode === "TWD" ? "1k TWD" : "1k HKD";
+  const editableRateKeys = useMemo(() => MONTH_OPTIONS.map((month) => `${String(latestYear).slice(-2)}${String(month).padStart(2, "0")}`), [latestYear]);
   const selectedTwRate = useMemo(() => {
     if (regionKey !== "TW") return null;
-    return resolveTwRate(formatPeriod(latestYear, selectedMonth), twExchangeRates, latestYear);
-  }, [latestYear, regionKey, selectedMonth, twExchangeRates]);
+    return resolveTwRate(formatPeriod(latestYear, selectedMonth), editableTwExchangeRates, latestYear);
+  }, [editableTwExchangeRates, latestYear, regionKey, selectedMonth]);
   const regionSales = useMemo(() => {
     if (regionKey !== "TW" || effectiveCurrencyMode === "HKD") return rawRegionSales;
 
     return Object.fromEntries(
       Object.entries(rawRegionSales).map(([storeCode, store]) => {
-        const monthlySales = convertSalesMapToTwd(store.monthlySales, twExchangeRates, latestYear);
-        const monthlyTagSales = convertSalesMapToTwd(store.monthlyTagSales, twExchangeRates, latestYear);
+        const monthlySales = convertSalesMapToTwd(store.monthlySales, editableTwExchangeRates, latestYear);
+        const monthlyTagSales = convertSalesMapToTwd(store.monthlyTagSales, editableTwExchangeRates, latestYear);
 
         return [
           storeCode,
@@ -338,7 +343,7 @@ export function DashboardShell({
         ];
       }),
     );
-  }, [effectiveCurrencyMode, latestYear, rawRegionSales, regionKey, twExchangeRates]);
+  }, [editableTwExchangeRates, effectiveCurrencyMode, latestYear, rawRegionSales, regionKey]);
   const availableBrands = useMemo(() => {
     const brands = Array.from(
       new Set(
@@ -352,6 +357,10 @@ export function DashboardShell({
       : brands;
     return ["ALL", ...orderedBrands];
   }, [regionSales]);
+
+  useEffect(() => {
+    setEditableTwExchangeRates(twExchangeRates);
+  }, [twExchangeRates]);
 
   useEffect(() => {
     if (availableBrands.length === 0) return;
@@ -379,6 +388,45 @@ export function DashboardShell({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ actualPeriod: formatPeriod(latestYear, nextMonth) }),
     });
+  }
+
+  function openRateEditor() {
+    const nextDrafts = Object.fromEntries(
+      editableRateKeys.map((key) => [key, (editableTwExchangeRates[key] ?? 0).toFixed(4)]),
+    );
+    setRateDrafts(nextDrafts);
+    setShowRateEditor(true);
+  }
+
+  async function handleRateSave() {
+    const nextRates = Object.fromEntries(
+      editableRateKeys.map((key) => [key, Number(rateDrafts[key])]),
+    );
+
+    if (Object.values(nextRates).some((value) => !Number.isFinite(value) || value <= 0)) {
+      window.alert("Enter valid positive monthly rates.");
+      return;
+    }
+
+    const mergedRates = { ...editableTwExchangeRates, ...nextRates };
+    setIsSavingRates(true);
+
+    try {
+      const response = await fetch("/api/store-view-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ twExchangeRates: mergedRates }),
+      });
+
+      if (!response.ok) {
+        throw new Error("failed_to_save_rates");
+      }
+
+      setEditableTwExchangeRates(mergedRates);
+      setShowRateEditor(false);
+    } finally {
+      setIsSavingRates(false);
+    }
   }
 
   const ytdYoy = useMemo(() => {
@@ -763,17 +811,18 @@ export function DashboardShell({
   }, [language, latestYear, selectedMonth]);
 
   useEffect(() => {
-    if (!showDataStructureModal) return;
+    if (!showDataStructureModal && !showRateEditor) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setShowDataStructureModal(false);
+        setShowRateEditor(false);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showDataStructureModal]);
+  }, [showDataStructureModal, showRateEditor]);
 
   if (!region) {
     return (
@@ -874,11 +923,16 @@ export function DashboardShell({
                         TWD
                       </button>
                     </div>
-                    <span
-                      className={`min-w-[170px] pr-2 text-[11px] font-medium text-stone-500 ${effectiveCurrencyMode === "HKD" && selectedTwRate != null ? "opacity-100" : "opacity-0"}`}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (canEditPeriod) openRateEditor();
+                      }}
+                      disabled={!canEditPeriod}
+                      className={`min-w-[170px] pr-2 text-left text-[11px] font-medium text-stone-500 transition ${effectiveCurrencyMode === "HKD" && selectedTwRate != null ? "opacity-100" : "pointer-events-none opacity-0"} ${canEditPeriod ? "hover:text-stone-700" : "cursor-default"}`}
                     >
                       {selectedTwRate != null ? `Rate 1 TWD = ${selectedTwRate.toFixed(4)} HKD` : "Rate 1 TWD = 0.0000 HKD"}
-                    </span>
+                    </button>
                   </div>
                 ) : null}
                 <div className="flex flex-wrap items-center gap-3">
@@ -1146,6 +1200,70 @@ export function DashboardShell({
           </div>
         </section>
       </div>
+      {showRateEditor ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/45 px-4 py-6">
+          <div
+            className="absolute inset-0"
+            aria-hidden="true"
+            onClick={() => setShowRateEditor(false)}
+          />
+          <section className="relative z-10 w-full max-w-3xl rounded-[28px] border border-white/60 bg-[#f7f3ec] p-5 shadow-[0_24px_80px_rgba(28,25,23,0.28)] md:p-6">
+            <div className="flex items-start justify-between gap-4 border-b border-stone-200 pb-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-stone-500">Monthly FX</p>
+                <h3 className="mt-2 text-2xl font-semibold text-stone-900">TW Exchange Rate Setup</h3>
+                <p className="mt-2 text-sm leading-6 text-stone-600">Base year {latestYear} monthly rates. Changes are editable only outside production.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRateEditor(false)}
+                className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-500 hover:bg-stone-100"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-3 xl:grid-cols-4">
+              {editableRateKeys.map((key, index) => (
+                <label key={key} className="rounded-[18px] border border-stone-200 bg-white/90 px-4 py-3 text-sm shadow-sm">
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">{key}</span>
+                  <span className="mt-1 block text-[11px] text-stone-500">Month {index + 1}</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.0001"
+                    min="0"
+                    value={rateDrafts[key] ?? ""}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setRateDrafts((current) => ({ ...current, [key]: nextValue }));
+                    }}
+                    className="mt-3 w-full rounded-full border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-800 outline-none transition focus:border-emerald-600"
+                  />
+                </label>
+              ))}
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowRateEditor(false)}
+                className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 shadow-sm transition hover:border-stone-500 hover:bg-stone-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRateSave()}
+                disabled={isSavingRates || !canEditPeriod}
+                className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm transition ${isSavingRates || !canEditPeriod ? "bg-stone-400" : "bg-stone-950 hover:bg-stone-800"}`}
+              >
+                {isSavingRates ? "Saving..." : "Save Rates"}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
       {showDataStructureModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/45 px-4 py-6">
           <div
