@@ -75,6 +75,7 @@ type SortDirection = "desc" | "asc";
 type CardMetricMode = "month" | "ytd" | "annual";
 type StoreTooltipMode = "month" | "ytd" | "annual";
 type Language = "kr" | "en";
+type CurrencyMode = "HKD" | "TWD";
 
 type TableRow = {
   kind: RowKind;
@@ -279,11 +280,13 @@ const ANNUAL_STORE_COUNT_SUM_LABEL = "연간 매장수 합계";
 export function DashboardShell({
   data,
   storeMonthlySales,
+  twExchangeRates,
   initialActualPeriod,
   canEditPeriod,
 }: {
   data: DashboardData;
   storeMonthlySales: StoreMonthlySales;
+  twExchangeRates: Record<string, number>;
   initialActualPeriod?: string;
   canEditPeriod: boolean;
 }) {
@@ -301,13 +304,41 @@ export function DashboardShell({
   const [sortMonth, setSortMonth] = useState<number | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [language, setLanguage] = useState<Language>("kr");
+  const [currencyMode, setCurrencyMode] = useState<CurrencyMode>("HKD");
   const text = useMemo<LocaleText>(() => (language === "en" ? { ...TEXT_EN, ...EXTRA_TEXT.en } : { ...TEXT, ...EXTRA_TEXT.kr }), [language]);
 
   const region = data.regions[regionKey];
   const latestYear = initialPeriod.year ?? getLatestYear(region?.latestPeriod);
   const storeRows = region?.storeYoyMultiYear ?? [];
-  const regionSales = storeMonthlySales[regionKey] ?? {};
+  const rawRegionSales = storeMonthlySales[regionKey] ?? {};
   const countryLabel = REGION_LABELS[regionKey] ?? regionKey;
+  const effectiveCurrencyMode: CurrencyMode = regionKey === "TW" ? currencyMode : "HKD";
+  const currencyUnitLabel = effectiveCurrencyMode === "TWD" ? "1k TWD" : "1k HKD";
+  const selectedTwRate = useMemo(() => {
+    if (regionKey !== "TW") return null;
+    return resolveTwRate(formatPeriod(latestYear, selectedMonth), twExchangeRates, latestYear);
+  }, [latestYear, regionKey, selectedMonth, twExchangeRates]);
+  const regionSales = useMemo(() => {
+    if (regionKey !== "TW" || effectiveCurrencyMode === "HKD") return rawRegionSales;
+
+    return Object.fromEntries(
+      Object.entries(rawRegionSales).map(([storeCode, store]) => {
+        const monthlySales = convertSalesMapToTwd(store.monthlySales, twExchangeRates, latestYear);
+        const monthlyTagSales = convertSalesMapToTwd(store.monthlyTagSales, twExchangeRates, latestYear);
+
+        return [
+          storeCode,
+          {
+            ...store,
+            monthlySales,
+            annualTotals: buildAnnualTotals(monthlySales),
+            monthlyTagSales,
+            annualTagTotals: buildAnnualTotals(monthlyTagSales),
+          },
+        ];
+      }),
+    );
+  }, [effectiveCurrencyMode, latestYear, rawRegionSales, regionKey, twExchangeRates]);
   const availableBrands = useMemo(() => {
     const brands = Array.from(
       new Set(
@@ -568,7 +599,7 @@ export function DashboardShell({
         <>
           <strong className="font-semibold text-stone-900">{basisLabel}</strong>{" "}
           <strong className="font-semibold text-stone-900">{overallCardTitle}</strong> is at{" "}
-          {renderTrendBadge(`${formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)} K HKD`, "stone")},{" "}
+          {renderTrendBadge(formatMetricWithUnit(overallCardDisplayMetric.sales, tableBasisMode, effectiveCurrencyMode), "stone")},{" "}
           with {renderTrendMetricBadge("YOY", overallCardDisplayMetric.yoyPrev)} and{" "}
           {renderTrendMetricBadge(text.yoyTwo, overallCardDisplayMetric.yoyTwo)}.
         </>,
@@ -582,7 +613,7 @@ export function DashboardShell({
             {strongestGrowth.topSales ? (
               <>
                 {" "}Its top-selling store is <strong className="font-semibold text-stone-900">{formatStoreName(strongestGrowth.topSales.storeName, language)}</strong>{" "}
-                at {renderTrendBadge(`${formatMetricValue(strongestGrowth.topSales.value, tableBasisMode)} K HKD`, "stone")}.
+                at {renderTrendBadge(formatMetricWithUnit(strongestGrowth.topSales.value, tableBasisMode, effectiveCurrencyMode), "stone")}.
               </>
             ) : null}
           </>,
@@ -615,7 +646,7 @@ export function DashboardShell({
       <>
         <strong className="font-semibold text-stone-900">{basisLabel}</strong> 기준{" "}
         <strong className="font-semibold text-stone-900">{overallCardTitle}</strong> {getSalesLabel(tableBasisMode, language)}은{" "}
-        {renderTrendBadge(`${formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)} K HKD`, "stone")}이며,{" "}
+        {renderTrendBadge(formatMetricWithUnit(overallCardDisplayMetric.sales, tableBasisMode, effectiveCurrencyMode), "stone")}이며,{" "}
         {renderTrendMetricBadge("YOY", overallCardDisplayMetric.yoyPrev)}{" "}
         {renderTrendMetricBadge(text.yoyTwo, overallCardDisplayMetric.yoyTwo)} 흐름입니다.
       </>,
@@ -629,7 +660,7 @@ export function DashboardShell({
           {strongestGrowth.topSales ? (
             <>
               {" "}대표 매출 점포는 <strong className="font-semibold text-stone-900">{formatStoreName(strongestGrowth.topSales.storeName, language)}</strong>로{" "}
-              {renderTrendBadge(`${formatMetricValue(strongestGrowth.topSales.value, tableBasisMode)} K HKD`, "stone")}입니다.
+              {renderTrendBadge(formatMetricWithUnit(strongestGrowth.topSales.value, tableBasisMode, effectiveCurrencyMode), "stone")}입니다.
             </>
           ) : null}
         </>,
@@ -655,7 +686,7 @@ export function DashboardShell({
     }
 
     return lines.slice(0, 4);
-  }, [cardMetricMode, channelHighlights, language, latestYear, overallCardDisplayMetric.sales, overallCardDisplayMetric.yoyPrev, overallCardDisplayMetric.yoyTwo, overallCardTitle, selectedMonth, tableBasisMode, text.yoyTwo]);
+  }, [cardMetricMode, channelHighlights, effectiveCurrencyMode, language, latestYear, overallCardDisplayMetric.sales, overallCardDisplayMetric.yoyPrev, overallCardDisplayMetric.yoyTwo, overallCardTitle, selectedMonth, tableBasisMode, text.yoyTwo]);
 
   const dataStructureSections = useMemo(() => {
     if (language === "en") {
@@ -825,6 +856,31 @@ export function DashboardShell({
                     {text.annualMode}
                   </button>
                 </div>
+                {regionKey === "TW" ? (
+                  <div className="flex flex-wrap items-center gap-2 rounded-full border border-stone-300 bg-white px-2 py-1 shadow-sm">
+                    <div className="inline-flex rounded-full border border-stone-200 bg-stone-50 p-1">
+                      <button
+                        type="button"
+                        onClick={() => setCurrencyMode("HKD")}
+                        className={`w-14 rounded-full px-3 py-1.5 text-center text-sm font-semibold transition ${effectiveCurrencyMode === "HKD" ? "bg-stone-950 text-white" : "text-stone-600"}`} 
+                      >
+                        HKD
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCurrencyMode("TWD")}
+                        className={`w-14 rounded-full px-3 py-1.5 text-center text-sm font-semibold transition ${effectiveCurrencyMode === "TWD" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+                      >
+                        TWD
+                      </button>
+                    </div>
+                    <span
+                      className={`min-w-[170px] pr-2 text-[11px] font-medium text-stone-500 ${effectiveCurrencyMode === "HKD" && selectedTwRate != null ? "opacity-100" : "opacity-0"}`}
+                    >
+                      {selectedTwRate != null ? `Rate 1 TWD = ${selectedTwRate.toFixed(4)} HKD` : "Rate 1 TWD = 0.0000 HKD"}
+                    </span>
+                  </div>
+                ) : null}
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="inline-flex rounded-full border border-stone-300 bg-white p-1 shadow-sm">
                     <button
@@ -927,6 +983,7 @@ export function DashboardShell({
             basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
             salesLabel={getSalesLabel(tableBasisMode, language)}
             salesValue={formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)}
+            currencyLabel={effectiveCurrencyMode}
             yoyValue={overallCardDisplayMetric.yoyPrev}
             yoyTwoValue={overallCardDisplayMetric.yoyTwo}
             salesMetric={overallCardMetric}
@@ -942,12 +999,12 @@ export function DashboardShell({
               channel={formatChannelGroupLabel(item.channel, language)}
               basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
               selectedSalesLabel={getSalesLabel(tableBasisMode, language)}
-              selectedSalesValue={`${formatMetricValue(item.displayChannelMetric.sales, tableBasisMode)} K HKD`}
+              selectedSalesValue={formatMetricWithUnit(item.displayChannelMetric.sales, tableBasisMode, effectiveCurrencyMode)}
               discountSummary={item.discountSummary}
               summaryValue={renderCardComparison(item.channel, item.displayChannelMetric.yoyPrev, item.displayChannelMetric.yoyTwo, text.yoyTwo)}
               salesLabel={text.channelTopSales}
               yoyLabel={text.channelTopYoy}
-              salesValue={item.topSales ? `${formatStoreName(item.topSales.storeName, language)} / ${formatMetricValue(item.topSales.value, tableBasisMode)} K HKD` : text.noData}
+              salesValue={item.topSales ? `${formatStoreName(item.topSales.storeName, language)} / ${formatMetricWithUnit(item.topSales.value, tableBasisMode, effectiveCurrencyMode)}` : text.noData}
               salesDetail={item.topSales ? renderMetricComparison(item.topSales.yoyPrev, item.topSales.yoyTwo, text.yoyTwo) : null}
               yoyValue={item.topYoy ? `${formatStoreName(item.topYoy.storeName, language)} / ${formatYoyRate(item.topYoy.value)}` : text.noData}
               yoyDetail={item.topYoy ? renderMetricComparison(item.topYoy.value, item.topYoy.yoyTwo, text.yoyTwo) : null}
@@ -992,7 +1049,7 @@ export function DashboardShell({
             </div>
             <div className="text-right text-sm text-stone-500">
               <p>{text.ytdRight}</p>
-              <p className="mt-1">{`${text.unit} ${unitBasisLabel}`}</p>
+              <p className="mt-1">{`${text.unit.replace("1k HKD", currencyUnitLabel)} ${unitBasisLabel}`}</p>
             </div>
           </div>
 
@@ -1347,6 +1404,7 @@ function OverallSummaryCard({
   basis,
   salesLabel,
   salesValue,
+  currencyLabel,
   yoyValue,
   yoyTwoValue,
   salesMetric,
@@ -1360,6 +1418,7 @@ function OverallSummaryCard({
   basis: string;
   salesLabel: string;
   salesValue: string;
+  currencyLabel: CurrencyMode;
   yoyValue: number | null;
   yoyTwoValue: number | null;
   salesMetric?: CellMetric;
@@ -1401,7 +1460,7 @@ function OverallSummaryCard({
           <p className="mt-1 text-base font-semibold text-stone-900">
             {showPerStoreFormulaTooltip ? (
               <span className="group relative inline-flex cursor-help items-center justify-center">
-                <span className="border-b border-dotted border-stone-400/80">{salesValue} K HKD</span>
+                <span className="border-b border-dotted border-stone-400/80">{salesValue} K {currencyLabel}</span>
                 <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1 hidden w-72 -translate-x-1/2 rounded-[18px] border border-stone-200 bg-white px-3 py-3 text-left shadow-[0_12px_28px_rgba(28,25,23,0.16)] group-hover:block">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-400">{localeText.formulaExpression}</span>
                   <span className="mt-2 block text-[12px] font-semibold text-stone-900">{formulaTooltipTitle}</span>
@@ -1418,7 +1477,7 @@ function OverallSummaryCard({
                 </span>
               </span>
             ) : (
-              `${salesValue} K HKD`
+              `${salesValue} K ${currencyLabel}`
             )}
           </p>
         </div>
@@ -1872,9 +1931,49 @@ function formatMetricValue(value: number | null | undefined, basisMode: TableBas
   return formatSalesCell(value);
 }
 
+function formatMetricWithUnit(value: number | null | undefined, basisMode: TableBasisMode, currencyMode: CurrencyMode) {
+  return `${formatMetricValue(value, basisMode)} K ${currencyMode}`;
+}
+
 function formatPerStoreSalesCell(value: number | null | undefined) {
   if (value == null || Number.isNaN(value)) return "-";
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(value));
+}
+
+function buildAnnualTotals(monthlySource: Record<string, number>) {
+  const annualTotals: Record<string, number> = {};
+
+  for (const [periodKey, amount] of Object.entries(monthlySource)) {
+    const year = periodKey.slice(0, 4);
+    annualTotals[year] = (annualTotals[year] ?? 0) + amount;
+  }
+
+  return Object.fromEntries(Object.entries(annualTotals).map(([year, amount]) => [year, Math.round(amount * 100) / 100]));
+}
+
+function resolveTwRate(periodKey: string, exchangeRates: Record<string, number>, referenceYear?: number) {
+  const year = periodKey.slice(0, 4);
+  const month = periodKey.slice(5, 7);
+  const rateKey = `${String(referenceYear ?? Number(year)).slice(-2)}${month}`;
+
+  if (exchangeRates[rateKey] != null) return exchangeRates[rateKey];
+
+  const available = Object.keys(exchangeRates).sort();
+  if (available.length === 0) return 1;
+
+  const earlier = available.filter((key) => key <= rateKey);
+  const fallbackKey = earlier.length > 0 ? earlier[earlier.length - 1] : available[0];
+  return exchangeRates[fallbackKey] ?? 1;
+}
+
+function convertSalesMapToTwd(source: Record<string, number>, exchangeRates: Record<string, number>, referenceYear: number) {
+  return Object.fromEntries(
+    Object.entries(source).map(([periodKey, amount]) => {
+      const rate = resolveTwRate(periodKey, exchangeRates, referenceYear);
+      const converted = rate === 0 ? amount : amount / rate;
+      return [periodKey, Math.round(converted * 100) / 100];
+    }),
+  );
 }
 
 function formatStoreCount(value: number | null | undefined, mode?: StoreTooltipMode, language: Language = "kr") {
