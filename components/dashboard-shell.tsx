@@ -45,6 +45,20 @@ type StoreMonthlySales = Record<
   >
 >;
 
+type ProfitCardData = Record<
+  string,
+  Record<
+    string,
+    {
+      brand: string;
+      country: string;
+      channel: string;
+      storeName: string;
+      accounts: Record<string, Record<string, number>>;
+    }
+  >
+>;
+
 type CellMetric = {
   sales: number | null;
   previousSales: number | null;
@@ -73,9 +87,42 @@ type ViewMode = "yoy" | "sales";
 type TableBasisMode = "sales" | "perStore" | "tag";
 type SortDirection = "desc" | "asc";
 type CardMetricMode = "month" | "ytd" | "annual";
+type TopSummaryView = "sales" | "profit";
 type StoreTooltipMode = "month" | "ytd" | "annual";
 type Language = "kr" | "en";
 type CurrencyMode = "HKD" | "TWD";
+
+type ProfitBreakdownMetric = {
+  tagSales: number | null;
+  sales: number | null;
+  previousSales: number | null;
+  discountRate: number | null;
+  cogs: number | null;
+  grossProfit: number | null;
+  previousGrossProfit: number | null;
+  grossMargin: number | null;
+  grossMarginDeltaPp: number | null;
+  grossProfitYoy: number | null;
+  directPayroll: number | null;
+  directRent: number | null;
+  directOther: number | null;
+  directProfit: number | null;
+  previousDirectProfit: number | null;
+  directMargin: number | null;
+  directMarginDeltaPp: number | null;
+  directProfitYoy: number | null;
+  operatingPayroll: number | null;
+  operatingRent: number | null;
+  advertising: number | null;
+  operatingOther: number | null;
+  operatingProfit: number | null;
+  previousOperatingProfit: number | null;
+  operatingMargin: number | null;
+  operatingMarginDeltaPp: number | null;
+  operatingProfitYoy: number | null;
+  directOtherDetails: Record<string, number>;
+  operatingOtherDetails: Record<string, number>;
+};
 
 type TableRow = {
   kind: RowKind;
@@ -277,15 +324,43 @@ const TAG_SALES_LABEL = "택가매출";
 const YTD_STORE_COUNT_SUM_LABEL = "YTD 매장수 합계";
 const ANNUAL_STORE_COUNT_SUM_LABEL = "연간 매장수 합계";
 
+const TAG_SALES_ACCOUNT = "Tag매출액";
+const SALES_ACCOUNT = "실매출액";
+const COGS_ACCOUNT = "매출원가합계";
+const GROSS_PROFIT_ACCOUNT = "매출총이익";
+const OPERATING_PROFIT_ACCOUNT = "영업이익";
+const PAYROLL_ACCOUNT = "1. 급 여";
+const RENT_ACCOUNT = "4. 임차료";
+const ADVERTISING_ACCOUNT = "9. 광고선전비";
+const EXPENSE_ACCOUNT_SET = new Set([
+  "1. 급 여",
+  "2. TRAVEL & MEAL",
+  "3. 피복비(유니폼)",
+  "4. 임차료",
+  "5. 유지보수비",
+  "6. 수도광열비",
+  "7. 소모품비",
+  "8. 통신비",
+  "9. 광고선전비",
+  "10. 지급수수료",
+  "11. 운반비",
+  "12. 기타 수수료(매장관리비 외)",
+  "13. 보험료",
+  "14. 감가상각비",
+  "15. 면세점 직접비",
+]);
+
 export function DashboardShell({
   data,
   storeMonthlySales,
+  profitCardData,
   twExchangeRates,
   initialActualPeriod,
   canEditPeriod,
 }: {
   data: DashboardData;
   storeMonthlySales: StoreMonthlySales;
+  profitCardData: ProfitCardData;
   twExchangeRates: Record<string, number>;
   initialActualPeriod?: string;
   canEditPeriod: boolean;
@@ -297,7 +372,9 @@ export function DashboardShell({
   const [selectedBrand, setSelectedBrand] = useState("M");
   const [selectedMonth, setSelectedMonth] = useState(initialPeriod.month);
   const [cardMetricMode, setCardMetricMode] = useState<CardMetricMode>("ytd");
+  const [topSummaryView, setTopSummaryView] = useState<TopSummaryView>("sales");
   const [expandedChannels, setExpandedChannels] = useState<Record<string, boolean>>({});
+  const [expandedProfitBreakdowns, setExpandedProfitBreakdowns] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<ViewMode>("yoy");
   const [tableBasisMode, setTableBasisMode] = useState<TableBasisMode>("sales");
   const [showDataStructureModal, setShowDataStructureModal] = useState(false);
@@ -315,6 +392,7 @@ export function DashboardShell({
   const latestYear = initialPeriod.year ?? getLatestYear(region?.latestPeriod);
   const storeRows = region?.storeYoyMultiYear ?? [];
   const rawRegionSales = storeMonthlySales[regionKey] ?? {};
+  const rawRegionProfit = profitCardData[regionKey] ?? {};
   const countryLabel = REGION_LABELS[regionKey] ?? regionKey;
   const effectiveCurrencyMode: CurrencyMode = regionKey === "TW" ? currencyMode : "HKD";
   const currencyUnitLabel = effectiveCurrencyMode === "TWD" ? "1k TWD" : "1k HKD";
@@ -344,6 +422,19 @@ export function DashboardShell({
       }),
     );
   }, [editableTwExchangeRates, effectiveCurrencyMode, latestYear, rawRegionSales, regionKey]);
+  const regionProfit = useMemo(() => {
+    if (regionKey !== "TW" || effectiveCurrencyMode === "HKD") return rawRegionProfit;
+
+    return Object.fromEntries(
+      Object.entries(rawRegionProfit).map(([storeCode, store]) => [
+        storeCode,
+        {
+          ...store,
+          accounts: convertProfitAccountsToTwd(store.accounts, editableTwExchangeRates, latestYear),
+        },
+      ]),
+    );
+  }, [editableTwExchangeRates, effectiveCurrencyMode, latestYear, rawRegionProfit, regionKey]);
   const availableBrands = useMemo(() => {
     const brands = Array.from(
       new Set(
@@ -367,6 +458,7 @@ export function DashboardShell({
     if (!availableBrands.includes(selectedBrand)) {
       setSelectedBrand(availableBrands.includes("M") ? "M" : availableBrands[0]);
       setExpandedChannels({});
+      setExpandedProfitBreakdowns({});
       setSortMonth(null);
       setSortDirection("desc");
     }
@@ -627,6 +719,24 @@ export function DashboardShell({
     }).sort((a, b) => getChannelCardOrder(a.channel) - getChannelCardOrder(b.channel) || a.channel.localeCompare(b.channel));
   }, [discountVatFactor, getCardMetric, storeOnlyRows, tableBasisMode]);
 
+  const filteredProfitStores = useMemo(
+    () => Object.values(regionProfit).filter((store) => selectedBrand === "ALL" || store.brand === selectedBrand),
+    [regionProfit, selectedBrand],
+  );
+  const overallProfitMetric = useMemo(
+    () => aggregateProfitMetrics(filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear, selectedMonth, cardMetricMode, discountVatFactor)), discountVatFactor),
+    [cardMetricMode, discountVatFactor, filteredProfitStores, latestYear, selectedMonth],
+  );
+  const profitChannelSummaries = useMemo(() => {
+    return channelHighlights.map((item) => {
+      const stores = filteredProfitStores.filter((store) => getProfitChannelHighlightLabel(store.country, store.channel) === item.channel);
+      return {
+        channel: item.channel,
+        metric: aggregateProfitMetrics(stores.map((store) => buildProfitMetricForStore(store, latestYear, selectedMonth, cardMetricMode, discountVatFactor)), discountVatFactor),
+      };
+    });
+  }, [cardMetricMode, channelHighlights, discountVatFactor, filteredProfitStores, latestYear, selectedMonth]);
+
   const trendSummary = useMemo(() => {
     const strongestGrowth = channelHighlights
       .filter((item) => item.displayChannelMetric.yoyPrev != null)
@@ -854,6 +964,7 @@ export function DashboardShell({
                       setRegionKey(key);
                       setSelectedMonth(initialPeriod.month);
                       setExpandedChannels({});
+                      setExpandedProfitBreakdowns({});
                       setSortMonth(null);
                       setSortDirection("desc");
                     }}
@@ -871,6 +982,7 @@ export function DashboardShell({
                     onChange={(event) => {
                       setSelectedBrand(event.target.value);
                       setExpandedChannels({});
+                      setExpandedProfitBreakdowns({});
                       setSortMonth(null);
                       setSortDirection("desc");
                     }}
@@ -882,6 +994,22 @@ export function DashboardShell({
                       </option>
                     ))}
                   </select>
+                </div>
+                <div className="inline-flex rounded-full border border-stone-300 bg-white p-1 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setTopSummaryView("sales")}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${topSummaryView === "sales" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+                  >
+                    {language === "en" ? "Sales" : "\uB9E4\uCD9C"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTopSummaryView("profit")}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${topSummaryView === "profit" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+                  >
+                    {language === "en" ? "Profit" : "\uC774\uC775"}
+                  </button>
                 </div>
                 <div className="inline-flex rounded-full border border-stone-300 bg-white p-1 shadow-sm">
                   <button
@@ -1033,40 +1161,78 @@ export function DashboardShell({
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <OverallSummaryCard
-            title={overallCardTitle}
-            basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
-            salesLabel={getSalesLabel(tableBasisMode, language)}
-            salesValue={formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)}
-            currencyLabel={effectiveCurrencyMode}
-            yoyValue={overallCardDisplayMetric.yoyPrev}
-            yoyTwoValue={overallCardDisplayMetric.yoyTwo}
-            salesMetric={overallCardMetric}
-            discountSummary={overallCardDiscountSummary}
-            basisMode={tableBasisMode}
-            storeTooltipMode={cardMetricMode === "month" ? "month" : cardMetricMode === "annual" ? "annual" : "ytd"}
-            localeText={text}
-            language={language}
-          />
-          {channelHighlights.map((item) => (
-            <ChannelHighlightCard
-              key={item.channel}
-              channel={formatChannelGroupLabel(item.channel, language)}
-              basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
-              selectedSalesLabel={getSalesLabel(tableBasisMode, language)}
-              selectedSalesValue={formatMetricWithUnit(item.displayChannelMetric.sales, tableBasisMode, effectiveCurrencyMode)}
-              discountSummary={item.discountSummary}
-              summaryValue={renderCardComparison(item.channel, item.displayChannelMetric.yoyPrev, item.displayChannelMetric.yoyTwo, text.yoyTwo)}
-              salesLabel={text.channelTopSales}
-              yoyLabel={text.channelTopYoy}
-              salesValue={item.topSales ? `${formatStoreName(item.topSales.storeName, language)} / ${formatMetricWithUnit(item.topSales.value, tableBasisMode, effectiveCurrencyMode)}` : text.noData}
-              salesDetail={item.topSales ? renderMetricComparison(item.topSales.yoyPrev, item.topSales.yoyTwo, text.yoyTwo) : null}
-              yoyValue={item.topYoy ? `${formatStoreName(item.topYoy.storeName, language)} / ${formatYoyRate(item.topYoy.value)}` : text.noData}
-              yoyDetail={item.topYoy ? renderMetricComparison(item.topYoy.value, item.topYoy.yoyTwo, text.yoyTwo) : null}
-              yoyTone={item.topYoy?.value}
-              localeText={text}
-            />
-          ))}
+          {topSummaryView === "sales" ? (
+            <>
+              <OverallSummaryCard
+                title={overallCardTitle}
+                basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
+                salesLabel={getSalesLabel(tableBasisMode, language)}
+                salesValue={formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)}
+                currencyLabel={effectiveCurrencyMode}
+                yoyValue={overallCardDisplayMetric.yoyPrev}
+                yoyTwoValue={overallCardDisplayMetric.yoyTwo}
+                salesMetric={overallCardMetric}
+                discountSummary={overallCardDiscountSummary}
+                basisMode={tableBasisMode}
+                storeTooltipMode={cardMetricMode === "month" ? "month" : cardMetricMode === "annual" ? "annual" : "ytd"}
+                localeText={text}
+                language={language}
+              />
+              {channelHighlights.map((item) => (
+                <ChannelHighlightCard
+                  key={item.channel}
+                  channel={formatChannelGroupLabel(item.channel, language)}
+                  basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
+                  selectedSalesLabel={getSalesLabel(tableBasisMode, language)}
+                  selectedSalesValue={formatMetricWithUnit(item.displayChannelMetric.sales, tableBasisMode, effectiveCurrencyMode)}
+                  discountSummary={item.discountSummary}
+                  summaryValue={renderCardComparison(item.channel, item.displayChannelMetric.yoyPrev, item.displayChannelMetric.yoyTwo, text.yoyTwo)}
+                  salesLabel={text.channelTopSales}
+                  yoyLabel={text.channelTopYoy}
+                  salesValue={item.topSales ? `${formatStoreName(item.topSales.storeName, language)} / ${formatMetricWithUnit(item.topSales.value, tableBasisMode, effectiveCurrencyMode)}` : text.noData}
+                  salesDetail={item.topSales ? renderMetricComparison(item.topSales.yoyPrev, item.topSales.yoyTwo, text.yoyTwo) : null}
+                  yoyValue={item.topYoy ? `${formatStoreName(item.topYoy.storeName, language)} / ${formatYoyRate(item.topYoy.value)}` : text.noData}
+                  yoyDetail={item.topYoy ? renderMetricComparison(item.topYoy.value, item.topYoy.yoyTwo, text.yoyTwo) : null}
+                  yoyTone={item.topYoy?.value}
+                  localeText={text}
+                />
+              ))}
+            </>
+          ) : (
+            <>
+              <ProfitSummaryCard
+                cardKey="overall"
+                title={overallCardTitle}
+                basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
+                primaryLabel={language === "en" ? "Operating Profit" : "\uC601\uC5C5\uC774\uC775"}
+                primaryValue={formatMetricWithUnit(overallProfitMetric.operatingProfit, "sales", effectiveCurrencyMode)}
+                secondaryLabel={language === "en" ? "Direct Profit" : "\uC9C1\uC811\uC774\uC775"}
+                secondaryValue={formatMetricWithUnit(overallProfitMetric.directProfit, "sales", effectiveCurrencyMode)}
+                metric={overallProfitMetric}
+                currencyLabel={effectiveCurrencyMode}
+                language={language}
+                expandedProfitBreakdowns={expandedProfitBreakdowns}
+                onToggleBreakdown={(detailKey) => setExpandedProfitBreakdowns((current) => ({ ...current, [detailKey]: !current[detailKey] }))}
+              />
+              {profitChannelSummaries.map((item) => (
+                <ProfitSummaryCard
+                  key={item.channel}
+                  cardKey={item.channel}
+                  title={formatChannelGroupLabel(item.channel, language)}
+                  basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
+                  primaryLabel={language === "en" ? "Direct Profit" : "\uC9C1\uC811\uC774\uC775"}
+                  primaryValue={formatMetricWithUnit(item.metric.directProfit, "sales", effectiveCurrencyMode)}
+                  secondaryLabel={language === "en" ? "Gross Profit" : "\uB9E4\uCD9C\uCD1D\uC774\uC775"}
+                  secondaryValue={formatMetricWithUnit(item.metric.grossProfit, "sales", effectiveCurrencyMode)}
+                  metric={item.metric}
+                  currencyLabel={effectiveCurrencyMode}
+                  language={language}
+                  expandedProfitBreakdowns={expandedProfitBreakdowns}
+                  onToggleBreakdown={(detailKey) => setExpandedProfitBreakdowns((current) => ({ ...current, [detailKey]: !current[detailKey] }))}
+                />
+              ))}
+            </>
+          )}
         </section>
 
         <section className="rounded-[24px] border border-white/55 bg-white/80 p-5 shadow-[0_16px_36px_rgba(65,46,24,0.08)]">
@@ -1678,6 +1844,168 @@ function ChannelHighlightCard({
   );
 }
 
+function ProfitSummaryCard({
+  cardKey,
+  title,
+  basis,
+  primaryLabel,
+  primaryValue,
+  secondaryLabel,
+  secondaryValue,
+  metric,
+  currencyLabel,
+  language,
+  expandedProfitBreakdowns,
+  onToggleBreakdown,
+}: {
+  cardKey: string;
+  title: string;
+  basis: string;
+  primaryLabel: string;
+  primaryValue: string;
+  secondaryLabel: string;
+  secondaryValue: string;
+  metric: ProfitBreakdownMetric;
+  currencyLabel: CurrencyMode;
+  language: Language;
+  expandedProfitBreakdowns: Record<string, boolean>;
+  onToggleBreakdown: (detailKey: string) => void;
+}) {
+  const directOtherKey = `${cardKey}::direct-other`;
+  const directOtherExpanded = expandedProfitBreakdowns[directOtherKey] ?? false;
+  const profitMetricDetailLabel = language === "en" ? "Margin" : "이익률";
+  const grossProfitDetail = [
+    `YOY ${formatYoyRate(metric.grossProfitYoy)}`,
+    `${profitMetricDetailLabel} ${formatDiscountRate(metric.grossMargin)} / ${formatDiscountDelta(metric.grossMarginDeltaPp)}`,
+  ].join("  ");
+  const directProfitDetail = [
+    `YOY ${formatYoyRate(metric.directProfitYoy)}`,
+    `${profitMetricDetailLabel} ${formatDiscountRate(metric.directMargin)} / ${formatDiscountDelta(metric.directMarginDeltaPp)}`,
+  ].join("  ");
+
+  return (
+    <article className="rounded-[24px] border border-white/55 bg-white/88 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-base font-semibold leading-snug text-stone-900">{title}</p>
+          <p className="mt-1 text-xs text-stone-400">{basis}</p>
+        </div>
+      </div>
+      <div className="mt-3 rounded-[18px] border border-stone-200/80 bg-stone-50/70 p-3">
+        <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400">{primaryLabel}</p>
+        <p className="mt-1 text-lg font-semibold text-stone-900">{primaryValue}</p>
+        <p className="mt-2 text-xs font-medium text-stone-500">{secondaryLabel}</p>
+        <p className="mt-1 text-sm font-semibold text-stone-700">{secondaryValue}</p>
+      </div>
+      <div className="mt-4 space-y-1.5 rounded-[18px] border border-stone-200/80 bg-white/80 p-3">
+        <ProfitLine label={getProfitText("tagSales", language)} value={formatProfitAmount(metric.tagSales)} />
+        <ProfitLine label={getProfitText("discountRate", language)} value={formatDiscountRate(metric.discountRate)} />
+        <ProfitLine label={getProfitText("sales", language)} value={formatProfitAmount(metric.sales)} />
+        <ProfitLine label={getProfitText("cogs", language)} value={formatProfitAmount(metric.cogs)} />
+        <ProfitLine
+          label={getProfitText("grossProfit", language)}
+          value={formatProfitAmount(metric.grossProfit)}
+          strong
+          tone={metric.grossProfit}
+          detail={grossProfitDetail}
+        />
+        <ProfitLine label={getProfitText("directExpense", language)} value={formatProfitAmount(sumProfitValues(metric.directPayroll, metric.directRent, metric.directOther))} strong />
+        <ProfitLine label={getProfitText("directPayroll", language)} value={formatProfitAmount(metric.directPayroll)} nested />
+        <ProfitLine label={getProfitText("directRent", language)} value={formatProfitAmount(metric.directRent)} nested />
+        <ProfitExpandableLine
+          label={getProfitText("directOther", language)}
+          value={formatProfitAmount(metric.directOther)}
+          nested
+          expanded={directOtherExpanded}
+          onToggle={() => onToggleBreakdown(directOtherKey)}
+          detailEntries={metric.directOtherDetails}
+        />
+        <div className="mt-2 border-t border-stone-200 pt-2">
+          <ProfitLine
+            label={getProfitText("directProfit", language)}
+            value={formatProfitAmount(metric.directProfit)}
+            strong
+            tone={metric.directProfit}
+            detail={directProfitDetail}
+          />
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] text-stone-400">{language === "en" ? `Unit: 1k ${currencyLabel}` : `단위: 1k ${currencyLabel}`}</p>
+    </article>
+  );
+}
+
+function ProfitLine({
+  label,
+  value,
+  nested = false,
+  strong = false,
+  tone,
+  detail,
+}: {
+  label: string;
+  value: string;
+  nested?: boolean;
+  strong?: boolean;
+  tone?: number | null;
+  detail?: string | null;
+}) {
+  return (
+    <div className={`${nested ? "pl-4" : ""}`}>
+      <div className="flex items-center justify-between gap-3 text-[12px]">
+        <span className={`${strong ? "font-semibold text-stone-900" : "text-stone-600"}`}>{label}</span>
+        <span className={`${strong ? valueTone(tone ?? 0).replace("text-stone-400", "text-stone-900") : "text-stone-700"} font-medium`}>{value}</span>
+      </div>
+      {detail ? <p className="mt-0.5 text-[11px] text-stone-400">{detail}</p> : null}
+    </div>
+  );
+}
+
+function ProfitExpandableLine({
+  label,
+  value,
+  expanded,
+  onToggle,
+  detailEntries,
+  nested = false,
+}: {
+  label: string;
+  value: string;
+  expanded: boolean;
+  onToggle: () => void;
+  detailEntries: Record<string, number>;
+  nested?: boolean;
+}) {
+  const entries = Object.entries(detailEntries).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`flex w-full items-center justify-between gap-3 text-left text-[12px] ${nested ? "pl-4" : ""}`}
+      >
+        <span className="inline-flex items-center gap-1 text-stone-600">
+          <span className={`transition ${expanded ? "rotate-90" : ""}`}>▸</span>
+          <span>{label}</span>
+        </span>
+        <span className="font-medium text-stone-700">{value}</span>
+      </button>
+      {expanded ? (
+        <div className="mt-1 space-y-1 pl-8">
+          {entries.length > 0 ? (
+            entries.map(([name, amount]) => (
+              <ProfitLine key={name} label={name} value={formatProfitAmount(amount)} nested />
+            ))
+          ) : (
+            <ProfitLine label="-" value="-" nested />
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function MetricCell({
   metric,
   emphasize = false,
@@ -1988,6 +2316,322 @@ function getDiscountSummary(metric: CellMetric, vatFactor = 1): DiscountSummary 
   };
 }
 
+function convertProfitAccountsToTwd(
+  accounts: Record<string, Record<string, number>>,
+  exchangeRates: Record<string, number>,
+  referenceYear: number,
+) {
+  return Object.fromEntries(
+    Object.entries(accounts).map(([accountName, periods]) => {
+      if (accountName === "할인율") {
+        return [accountName, periods];
+      }
+      return [accountName, convertSalesMapToTwd(periods, exchangeRates, referenceYear)];
+    }),
+  );
+}
+
+function getProfitChannelHighlightLabel(country: string, channel: string) {
+  if (country === "MC") return "마카오";
+  if (country === "HK" && channel === "리테일") return "홍콩 리테일";
+  if (country === "HK" && channel === "아울렛") return "홍콩 아울렛";
+  if (country === "HK" && channel === "온라인") return "홍콩 온라인";
+  return `${country} ${channel}`.trim();
+}
+
+function emptyProfitMetric(): ProfitBreakdownMetric {
+  return {
+    tagSales: null,
+    sales: null,
+    previousSales: null,
+    discountRate: null,
+    cogs: null,
+    grossProfit: null,
+    previousGrossProfit: null,
+    grossMargin: null,
+    grossMarginDeltaPp: null,
+    grossProfitYoy: null,
+    directPayroll: null,
+    directRent: null,
+    directOther: null,
+    directProfit: null,
+    previousDirectProfit: null,
+    directMargin: null,
+    directMarginDeltaPp: null,
+    directProfitYoy: null,
+    operatingPayroll: null,
+    operatingRent: null,
+    advertising: null,
+    operatingOther: null,
+    operatingProfit: null,
+    previousOperatingProfit: null,
+    operatingMargin: null,
+    operatingMarginDeltaPp: null,
+    operatingProfitYoy: null,
+    directOtherDetails: {},
+    operatingOtherDetails: {},
+  };
+}
+
+function sumProfitPeriods(source: Record<string, number> | undefined, year: number, selectedMonth: number, mode: CardMetricMode) {
+  if (!source) return null;
+  if (mode === "month") {
+    const value = source[formatPeriod(year, selectedMonth)];
+    return value == null ? null : value;
+  }
+  if (mode === "annual") {
+    let total = 0;
+    let hasValue = false;
+    for (let month = 1; month <= 12; month += 1) {
+      const value = source[formatPeriod(year, month)];
+      if (value == null) continue;
+      total += value;
+      hasValue = true;
+    }
+    return hasValue ? total : null;
+  }
+  return sumPeriods(source, year, selectedMonth);
+}
+
+function sumProfitValues(...values: Array<number | null | undefined>) {
+  const valid = values.filter((value): value is number => value != null && !Number.isNaN(value));
+  if (valid.length === 0) return null;
+  return valid.reduce((sum, value) => sum + value, 0);
+}
+
+function calculateMarginValue(amount: number | null | undefined, sales: number | null | undefined) {
+  if (amount == null || sales == null || Number.isNaN(amount) || Number.isNaN(sales) || sales === 0) {
+    return null;
+  }
+  return amount / sales;
+}
+
+function calculateMarginDeltaPp(currentMargin: number | null | undefined, previousMargin: number | null | undefined) {
+  if (currentMargin == null || previousMargin == null || Number.isNaN(currentMargin) || Number.isNaN(previousMargin)) {
+    return null;
+  }
+  return (currentMargin - previousMargin) * 100;
+}
+
+function mergeProfitDetailMaps(maps: Array<Record<string, number>>) {
+  const merged: Record<string, number> = {};
+  for (const map of maps) {
+    for (const [key, value] of Object.entries(map)) {
+      merged[key] = (merged[key] ?? 0) + value;
+    }
+  }
+  return Object.fromEntries(
+    Object.entries(merged)
+      .filter(([, value]) => Math.abs(value) > 0.0001)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])),
+  );
+}
+
+function buildProfitMetricForStore(
+  store: ProfitCardData[string][string],
+  latestYear: number,
+  selectedMonth: number,
+  mode: CardMetricMode,
+  vatFactor = 1,
+): ProfitBreakdownMetric {
+  const metric = emptyProfitMetric();
+  const accounts = store.accounts ?? {};
+  metric.tagSales = sumProfitPeriods(accounts[TAG_SALES_ACCOUNT], latestYear, selectedMonth, mode);
+  metric.sales = sumProfitPeriods(accounts[SALES_ACCOUNT], latestYear, selectedMonth, mode);
+  metric.previousSales = sumProfitPeriods(accounts[SALES_ACCOUNT], latestYear - 1, selectedMonth, mode);
+  metric.cogs = sumProfitPeriods(accounts[COGS_ACCOUNT], latestYear, selectedMonth, mode);
+  const rawGrossProfit = sumProfitPeriods(accounts[GROSS_PROFIT_ACCOUNT], latestYear, selectedMonth, mode);
+  metric.grossProfit = rawGrossProfit ?? (metric.sales != null && metric.cogs != null ? metric.sales - metric.cogs : null);
+  metric.previousGrossProfit = sumProfitPeriods(accounts[GROSS_PROFIT_ACCOUNT], latestYear - 1, selectedMonth, mode);
+
+  const directOtherDetails: Record<string, number> = {};
+  const operatingOtherDetails: Record<string, number> = {};
+  const isOffice = store.channel === "오피스";
+
+  for (const [accountName, periods] of Object.entries(accounts)) {
+    if (!EXPENSE_ACCOUNT_SET.has(accountName)) continue;
+    const amount = sumProfitPeriods(periods, latestYear, selectedMonth, mode);
+    if (amount == null) continue;
+
+    if (isOffice) {
+      if (accountName === PAYROLL_ACCOUNT) {
+        metric.operatingPayroll = (metric.operatingPayroll ?? 0) + amount;
+      } else if (accountName === RENT_ACCOUNT) {
+        metric.operatingRent = (metric.operatingRent ?? 0) + amount;
+      } else if (accountName === ADVERTISING_ACCOUNT) {
+        metric.advertising = (metric.advertising ?? 0) + amount;
+      } else {
+        operatingOtherDetails[accountName] = (operatingOtherDetails[accountName] ?? 0) + amount;
+      }
+      continue;
+    }
+
+    if (accountName === PAYROLL_ACCOUNT) {
+      metric.directPayroll = (metric.directPayroll ?? 0) + amount;
+    } else if (accountName === RENT_ACCOUNT) {
+      metric.directRent = (metric.directRent ?? 0) + amount;
+    } else {
+      directOtherDetails[accountName] = (directOtherDetails[accountName] ?? 0) + amount;
+    }
+  }
+
+  metric.directOtherDetails = directOtherDetails;
+  metric.operatingOtherDetails = operatingOtherDetails;
+  metric.directOther = sumProfitValues(...Object.values(directOtherDetails));
+  metric.operatingOther = sumProfitValues(...Object.values(operatingOtherDetails));
+  metric.discountRate = calculateDiscountRate(metric.sales, metric.tagSales, vatFactor);
+
+  const directExpense = sumProfitValues(metric.directPayroll, metric.directRent, metric.directOther) ?? 0;
+  const operatingExpense = sumProfitValues(metric.operatingPayroll, metric.operatingRent, metric.advertising, metric.operatingOther) ?? 0;
+  metric.directProfit = metric.grossProfit != null ? metric.grossProfit - directExpense : null;
+
+  const previousDirectPayroll = isOffice ? null : sumProfitPeriods(accounts[PAYROLL_ACCOUNT], latestYear - 1, selectedMonth, mode);
+  const previousDirectRent = isOffice ? null : sumProfitPeriods(accounts[RENT_ACCOUNT], latestYear - 1, selectedMonth, mode);
+  const previousDirectOther = isOffice
+    ? null
+    : sumProfitValues(
+        ...Object.entries(accounts)
+          .filter(([accountName]) => EXPENSE_ACCOUNT_SET.has(accountName) && accountName !== PAYROLL_ACCOUNT && accountName !== RENT_ACCOUNT)
+          .map(([, periods]) => sumProfitPeriods(periods, latestYear - 1, selectedMonth, mode)),
+      );
+  const previousDirectExpense = sumProfitValues(previousDirectPayroll, previousDirectRent, previousDirectOther) ?? 0;
+  metric.previousDirectProfit = metric.previousGrossProfit != null ? metric.previousGrossProfit - previousDirectExpense : null;
+
+  metric.operatingProfit = metric.directProfit != null
+    ? metric.directProfit - operatingExpense
+    : sumProfitPeriods(accounts[OPERATING_PROFIT_ACCOUNT], latestYear, selectedMonth, mode);
+  metric.previousOperatingProfit = sumProfitPeriods(accounts[OPERATING_PROFIT_ACCOUNT], latestYear - 1, selectedMonth, mode);
+
+  metric.grossMargin = calculateMarginValue(metric.grossProfit, metric.sales);
+  const previousGrossMargin = calculateMarginValue(metric.previousGrossProfit, metric.previousSales);
+  metric.grossMarginDeltaPp = calculateMarginDeltaPp(metric.grossMargin, previousGrossMargin);
+  metric.grossProfitYoy = calculateRatioChange(metric.grossProfit, metric.previousGrossProfit);
+
+  metric.directMargin = calculateMarginValue(metric.directProfit, metric.sales);
+  const previousDirectMargin = calculateMarginValue(metric.previousDirectProfit, metric.previousSales);
+  metric.directMarginDeltaPp = calculateMarginDeltaPp(metric.directMargin, previousDirectMargin);
+  metric.directProfitYoy = calculateRatioChange(metric.directProfit, metric.previousDirectProfit);
+
+  metric.operatingMargin = calculateMarginValue(metric.operatingProfit, metric.sales);
+  const previousOperatingMargin = calculateMarginValue(metric.previousOperatingProfit, metric.previousSales);
+  metric.operatingMarginDeltaPp = calculateMarginDeltaPp(metric.operatingMargin, previousOperatingMargin);
+  metric.operatingProfitYoy = calculateRatioChange(metric.operatingProfit, metric.previousOperatingProfit);
+  return metric;
+}
+
+function aggregateProfitMetrics(metrics: ProfitBreakdownMetric[], vatFactor = 1): ProfitBreakdownMetric {
+  const merged = emptyProfitMetric();
+  const numericKeys: Array<keyof Omit<ProfitBreakdownMetric, "directOtherDetails" | "operatingOtherDetails" | "discountRate">> = [
+    "tagSales",
+    "sales",
+    "previousSales",
+    "cogs",
+    "grossProfit",
+    "previousGrossProfit",
+    "directPayroll",
+    "directRent",
+    "directOther",
+    "directProfit",
+    "previousDirectProfit",
+    "operatingPayroll",
+    "operatingRent",
+    "advertising",
+    "operatingOther",
+    "operatingProfit",
+    "previousOperatingProfit",
+  ];
+
+  for (const key of numericKeys) {
+    const value = sumProfitValues(...metrics.map((metric) => metric[key] as number | null | undefined));
+    merged[key] = value as never;
+  }
+
+  merged.directOtherDetails = mergeProfitDetailMaps(metrics.map((metric) => metric.directOtherDetails));
+  merged.operatingOtherDetails = mergeProfitDetailMaps(metrics.map((metric) => metric.operatingOtherDetails));
+  merged.discountRate = calculateDiscountRate(merged.sales, merged.tagSales, vatFactor);
+
+  merged.grossMargin = calculateMarginValue(merged.grossProfit, merged.sales);
+  const previousGrossMargin = calculateMarginValue(merged.previousGrossProfit, merged.previousSales);
+  merged.grossMarginDeltaPp = calculateMarginDeltaPp(merged.grossMargin, previousGrossMargin);
+  merged.grossProfitYoy = calculateRatioChange(merged.grossProfit, merged.previousGrossProfit);
+
+  merged.directMargin = calculateMarginValue(merged.directProfit, merged.sales);
+  const previousDirectMargin = calculateMarginValue(merged.previousDirectProfit, merged.previousSales);
+  merged.directMarginDeltaPp = calculateMarginDeltaPp(merged.directMargin, previousDirectMargin);
+  merged.directProfitYoy = calculateRatioChange(merged.directProfit, merged.previousDirectProfit);
+
+  merged.operatingMargin = calculateMarginValue(merged.operatingProfit, merged.sales);
+  const previousOperatingMargin = calculateMarginValue(merged.previousOperatingProfit, merged.previousSales);
+  merged.operatingMarginDeltaPp = calculateMarginDeltaPp(merged.operatingMargin, previousOperatingMargin);
+  merged.operatingProfitYoy = calculateRatioChange(merged.operatingProfit, merged.previousOperatingProfit);
+  return merged;
+}
+
+function formatProfitAmount(value: number | null | undefined) {
+  if (value == null || Number.isNaN(value)) return "-";
+  return formatSalesCell(value);
+}
+
+function getProfitText(
+  key:
+    | "tagSales"
+    | "discountRate"
+    | "sales"
+    | "cogs"
+    | "grossProfit"
+    | "directExpense"
+    | "directPayroll"
+    | "directRent"
+    | "directOther"
+    | "directProfit"
+    | "operatingExpense"
+    | "operatingPayroll"
+    | "operatingRent"
+    | "advertising"
+    | "operatingOther"
+    | "operatingProfit",
+  language: Language,
+) {
+  const labels = language === "en"
+    ? {
+        tagSales: "Tag Sales",
+        discountRate: "Disc. Rate",
+        sales: "Net Sales",
+        cogs: "COGS",
+        grossProfit: "Gross Profit",
+        directExpense: "Direct Cost",
+        directPayroll: "Payroll",
+        directRent: "Rent",
+        directOther: "Other Direct",
+        directProfit: "Direct Profit",
+        operatingExpense: "Operating Exp.",
+        operatingPayroll: "Payroll",
+        operatingRent: "Rent",
+        advertising: "Advertising",
+        operatingOther: "Other Op. Exp.",
+        operatingProfit: "Operating Profit",
+      }
+    : {
+        tagSales: "\uD0DD\uAC00\uB9E4\uCD9C",
+        discountRate: "\uD560\uC778\uC728",
+        sales: "\uC2E4\uD310\uB9E4\uCD9C",
+        cogs: "\uB9E4\uCD9C\uC6D0\uAC00\uD569\uACC4",
+        grossProfit: "\uB9E4\uCD9C\uCD1D\uC774\uC775",
+        directExpense: "\uC9C1\uC811\uBE44",
+        directPayroll: "\uC778\uAC74\uBE44",
+        directRent: "\uC784\uCC28\uB8CC",
+        directOther: "\uAE30\uD0C0\uC9C1\uC811\uBE44",
+        directProfit: "\uC9C1\uC811\uC774\uC775",
+        operatingExpense: "\uC601\uC5C5\uBE44",
+        operatingPayroll: "\uC778\uAC74\uBE44",
+        operatingRent: "\uC784\uCC28\uB8CC",
+        advertising: "\uAD11\uACE0\uBE44",
+        operatingOther: "\uAE30\uD0C0\uC601\uC5C5\uBE44",
+        operatingProfit: "\uC601\uC5C5\uC774\uC775",
+      };
+  return labels[key];
+}
+
 function formatSalesCell(value: number | null | undefined) {
   if (value == null || Number.isNaN(value)) return "-";
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(value));
@@ -2231,4 +2875,5 @@ function pillTone(value: number | null | undefined) {
   if (value == null || Number.isNaN(value)) return "bg-stone-100 text-stone-600";
   return value >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700";
 }
+
 
