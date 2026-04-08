@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type MonthlyPoint = {
   year: number;
@@ -358,6 +359,7 @@ export function DashboardShell({
   twExchangeRates,
   initialActualPeriod,
   canEditPeriod,
+  canPersistSettings,
 }: {
   data: DashboardData;
   storeMonthlySales: StoreMonthlySales;
@@ -365,7 +367,11 @@ export function DashboardShell({
   twExchangeRates: Record<string, number>;
   initialActualPeriod?: string;
   canEditPeriod: boolean;
+  canPersistSettings: boolean;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const regionKeys = Object.keys(data.regions).filter((key) => data.regions[key]);
   const initialRegionKey = regionKeys[0] ?? "HKMC";
   const initialPeriod = parseActualPeriod(initialActualPeriod, DEFAULT_SELECTED_MONTH);
@@ -451,6 +457,10 @@ export function DashboardShell({
   }, [regionSales]);
 
   useEffect(() => {
+    setSelectedMonth(initialPeriod.month);
+  }, [initialPeriod.month]);
+
+  useEffect(() => {
     setEditableTwExchangeRates(twExchangeRates);
   }, [twExchangeRates]);
 
@@ -474,12 +484,17 @@ export function DashboardShell({
 
   async function handleActualPeriodChange(nextMonth: number) {
     setSelectedMonth(nextMonth);
-    if (!canEditPeriod) return;
+    const nextActualPeriod = formatPeriod(latestYear, nextMonth);
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("actualPeriod", nextActualPeriod);
+    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+
+    if (!canPersistSettings) return;
 
     await fetch("/api/store-view-settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ actualPeriod: formatPeriod(latestYear, nextMonth) }),
+      body: JSON.stringify({ actualPeriod: nextActualPeriod }),
     });
   }
 
@@ -1060,10 +1075,10 @@ export function DashboardShell({
                     <button
                       type="button"
                       onClick={() => {
-                        if (canEditPeriod) openRateEditor();
+                        if (canPersistSettings) openRateEditor();
                       }}
-                      disabled={!canEditPeriod}
-                      className={`min-w-[170px] pr-2 text-left text-[11px] font-medium text-stone-500 transition ${effectiveCurrencyMode === "HKD" && selectedTwRate != null ? "opacity-100" : "pointer-events-none opacity-0"} ${canEditPeriod ? "hover:text-stone-700" : "cursor-default"}`}
+                      disabled={!canPersistSettings}
+                      className={`min-w-[170px] pr-2 text-left text-[11px] font-medium text-stone-500 transition ${effectiveCurrencyMode === "HKD" && selectedTwRate != null ? "opacity-100" : "pointer-events-none opacity-0"} ${canPersistSettings ? "hover:text-stone-700" : "cursor-default"}`}
                     >
                       {selectedTwRate != null ? `Rate 1 TWD = ${selectedTwRate.toFixed(4)} HKD` : "Rate 1 TWD = 0.0000 HKD"}
                     </button>
@@ -1427,8 +1442,8 @@ export function DashboardShell({
               <button
                 type="button"
                 onClick={() => void handleRateSave()}
-                disabled={isSavingRates || !canEditPeriod}
-                className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm transition ${isSavingRates || !canEditPeriod ? "bg-stone-400" : "bg-stone-950 hover:bg-stone-800"}`}
+                disabled={isSavingRates || !canPersistSettings}
+                className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm transition ${isSavingRates || !canPersistSettings ? "bg-stone-400" : "bg-stone-950 hover:bg-stone-800"}`}
               >
                 {isSavingRates ? "Saving..." : "Save Rates"}
               </button>

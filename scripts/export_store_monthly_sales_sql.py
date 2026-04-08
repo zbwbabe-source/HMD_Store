@@ -1,8 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import calendar
 import csv
 import json
+import os
 import sqlite3
 import subprocess
 import sys
@@ -33,7 +34,7 @@ def load_settings() -> dict[str, object]:
 
 
 def load_actual_period(settings: dict[str, object]) -> tuple[int, int]:
-    raw = str(settings.get("actualPeriod") or "")
+    raw = os.environ.get("ACTUAL_PERIOD_OVERRIDE") or str(settings.get("actualPeriod") or "")
     year_text, month_text = raw.split("-", 1)
     year = int(year_text)
     month = int(month_text)

@@ -4,7 +4,9 @@ import { join } from "node:path";
 
 import { DashboardShell } from "@/components/dashboard-shell";
 
-function loadStoreMonthlySales() {
+const PERIOD_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+function loadStoreMonthlySales(actualPeriodOverride?: string) {
   const scriptPath = join(process.cwd(), "scripts", "export_store_monthly_sales_sql.py");
   const output = execFileSync("python", ["-X", "utf8", scriptPath], {
     cwd: process.cwd(),
@@ -12,6 +14,7 @@ function loadStoreMonthlySales() {
     env: {
       ...process.env,
       PYTHONIOENCODING: "utf-8",
+      ...(actualPeriodOverride ? { ACTUAL_PERIOD_OVERRIDE: actualPeriodOverride } : {}),
     },
   });
 
@@ -99,6 +102,15 @@ function loadViewSettings() {
   return JSON.parse(readFileSync(settingsPath, "utf-8")) as { actualPeriod?: string; twExchangeRates?: Record<string, number> };
 }
 
+function resolveActualPeriod(
+  searchParamValue: string | string[] | undefined,
+  fallback?: string,
+) {
+  const candidate = Array.isArray(searchParamValue) ? searchParamValue[0] : searchParamValue;
+  if (candidate && PERIOD_PATTERN.test(candidate)) return candidate;
+  return fallback;
+}
+
 function loadTwExchangeRates(overrides?: Record<string, number>) {
   const exchangeRatePath = join(process.cwd(), "TW_Exchange Rate.csv");
   const raw = readFileSync(exchangeRatePath, "utf-8").replace(/^\uFEFF/, "");
@@ -117,12 +129,18 @@ function loadTwExchangeRates(overrides?: Record<string, number>) {
   return { ...rates, ...(overrides ?? {}) };
 }
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: Promise<{ actualPeriod?: string | string[] | undefined }>;
+}) {
+  const resolvedSearchParams = (await searchParams) ?? {};
   const dataPath = join(process.cwd(), "data", "dashboard-data.json");
   const data = JSON.parse(readFileSync(dataPath, "utf-8"));
-  const storeMonthlySales = loadStoreMonthlySales();
-  const profitCardData = loadProfitCardData();
   const viewSettings = loadViewSettings();
+  const actualPeriod = resolveActualPeriod(resolvedSearchParams.actualPeriod, viewSettings.actualPeriod);
+  const storeMonthlySales = loadStoreMonthlySales(actualPeriod);
+  const profitCardData = loadProfitCardData();
   const twExchangeRates = loadTwExchangeRates(viewSettings.twExchangeRates);
 
   return (
@@ -131,8 +149,9 @@ export default function Home() {
       storeMonthlySales={storeMonthlySales}
       profitCardData={profitCardData}
       twExchangeRates={twExchangeRates}
-      initialActualPeriod={viewSettings.actualPeriod}
-      canEditPeriod={process.env.NODE_ENV !== "production"}
+      initialActualPeriod={actualPeriod}
+      canEditPeriod
+      canPersistSettings={process.env.NODE_ENV !== "production"}
     />
   );
 }
