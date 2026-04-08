@@ -139,7 +139,7 @@ type TableRow = {
 
 const TEXT = {
   emptyRegion: "표시할 리전 데이터가 없습니다.",
-  title: "홍콩법인 매장 월별 Sales / YoY",
+  title: "홍마대 매장별 추세",
   intro: "12개월 전체, 선택월 YTD, 연간 합계, 그리고 채널별 합계를 한 화면에서 볼 수 있게 정리했습니다.",
   period: "실적 기준월",
   baseYear: "기준 연도",
@@ -185,7 +185,7 @@ const TEXT = {
 
 const TEXT_EN = {
   emptyRegion: "No region data available.",
-  title: "HK Store Sales / YoY",
+  title: "HKMCTW Store Trend",
   intro: "Shows all 12 months, selected-month YTD, annual totals, and channel summaries in one view.",
   period: "Base Month",
   baseYear: "Base Year",
