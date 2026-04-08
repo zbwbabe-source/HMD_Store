@@ -323,6 +323,7 @@ const TAG_BASIS_LABEL = "택가매출 기준";
 const TAG_SALES_LABEL = "택가매출";
 const YTD_STORE_COUNT_SUM_LABEL = "YTD 매장수 합계";
 const ANNUAL_STORE_COUNT_SUM_LABEL = "연간 매장수 합계";
+const PROFIT_VIEW_ENABLED = false;
 
 const TAG_SALES_ACCOUNT = "Tag매출액";
 const SALES_ACCOUNT = "실매출액";
@@ -371,7 +372,7 @@ export function DashboardShell({
   const [regionKey, setRegionKey] = useState(initialRegionKey);
   const [selectedBrand, setSelectedBrand] = useState("M");
   const [selectedMonth, setSelectedMonth] = useState(initialPeriod.month);
-  const [cardMetricMode, setCardMetricMode] = useState<CardMetricMode>("ytd");
+  const [cardMetricMode, setCardMetricMode] = useState<CardMetricMode>("month");
   const [topSummaryView, setTopSummaryView] = useState<TopSummaryView>("sales");
   const [expandedChannels, setExpandedChannels] = useState<Record<string, boolean>>({});
   const [expandedProfitBreakdowns, setExpandedProfitBreakdowns] = useState<Record<string, boolean>>({});
@@ -1005,10 +1006,14 @@ export function DashboardShell({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setTopSummaryView("profit")}
-                    className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${topSummaryView === "profit" ? "bg-stone-950 text-white" : "text-stone-600"}`}
+                    onClick={() => {
+                      if (PROFIT_VIEW_ENABLED) setTopSummaryView("profit");
+                    }}
+                    disabled={!PROFIT_VIEW_ENABLED}
+                    aria-disabled={!PROFIT_VIEW_ENABLED}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${PROFIT_VIEW_ENABLED && topSummaryView === "profit" ? "bg-stone-950 text-white" : "text-stone-400"} ${!PROFIT_VIEW_ENABLED ? "cursor-not-allowed" : ""}`}
                   >
-                    {language === "en" ? "Profit" : "\uC774\uC775"}
+                    {language === "en" ? "Profit" : "이익"}
                   </button>
                 </div>
                 <div className="inline-flex rounded-full border border-stone-300 bg-white p-1 shadow-sm">
