@@ -324,8 +324,6 @@ const TAG_BASIS_LABEL = "택가매출 기준";
 const TAG_SALES_LABEL = "택가매출";
 const YTD_STORE_COUNT_SUM_LABEL = "YTD 매장수 합계";
 const ANNUAL_STORE_COUNT_SUM_LABEL = "연간 매장수 합계";
-const PROFIT_VIEW_ENABLED = false;
-
 const TAG_SALES_ACCOUNT = "Tag매출액";
 const SALES_ACCOUNT = "실매출액";
 const COGS_ACCOUNT = "매출원가합계";
@@ -379,6 +377,7 @@ export function DashboardShell({
   const [selectedBrand, setSelectedBrand] = useState("M");
   const [selectedMonth, setSelectedMonth] = useState(initialPeriod.month);
   const [cardMetricMode, setCardMetricMode] = useState<CardMetricMode>("month");
+  const PROFIT_VIEW_ENABLED = false;
   const [topSummaryView, setTopSummaryView] = useState<TopSummaryView>("sales");
   const [expandedChannels, setExpandedChannels] = useState<Record<string, boolean>>({});
   const [expandedProfitBreakdowns, setExpandedProfitBreakdowns] = useState<Record<string, boolean>>({});
@@ -1018,7 +1017,7 @@ export function DashboardShell({
                     ))}
                   </select>
                 </div>
-                <div className="inline-flex rounded-full border border-stone-300 bg-white p-1 shadow-sm">
+                <div className="hidden">
                   <button
                     type="button"
                     onClick={() => setTopSummaryView("sales")}
