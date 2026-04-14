@@ -681,6 +681,24 @@ export function DashboardShell({
     [cardMetricMode, selectedMonth],
   );
   const overallCardMetric = useMemo(() => aggregateMetricCells(storeOnlyRows.map((row) => getCardMetric(row))), [getCardMetric, storeOnlyRows]);
+  const overallTopSalesStore = useMemo(
+    () =>
+      storeOnlyRows.reduce<{ storeName: string; sales: number; yoyPrev: number | null } | null>((best, row) => {
+        const metric = getCardMetric(row);
+        const displayMetric = getDisplayMetric(metric, tableBasisMode);
+        const sales = displayMetric.sales;
+        if (sales == null) return best;
+        if (!best || sales > best.sales) {
+          return {
+            storeName: row.storeName,
+            sales,
+            yoyPrev: displayMetric.yoyPrev,
+          };
+        }
+        return best;
+      }, null),
+    [getCardMetric, storeOnlyRows, tableBasisMode],
+  );
   const overallCardDisplayMetric = useMemo(() => getDisplayMetric(overallCardMetric, tableBasisMode), [overallCardMetric, tableBasisMode]);
   const discountVatFactor = regionKey === "TW" ? 1.05 : 1;
   const overallCardDiscountSummary = useMemo(() => getDiscountSummary(overallCardMetric, discountVatFactor), [discountVatFactor, overallCardMetric]);
@@ -785,12 +803,6 @@ export function DashboardShell({
           <>
             <strong className="font-semibold text-stone-900">{formatChannelGroupLabel(strongestGrowth.channel, language)}</strong> shows the strongest momentum at{" "}
             {renderTrendMetricBadge("YOY", strongestGrowth.displayChannelMetric.yoyPrev)}.
-            {strongestGrowth.topSales ? (
-              <>
-                {" "}Its top-selling store is <strong className="font-semibold text-stone-900">{formatStoreName(strongestGrowth.topSales.storeName, language)}</strong>{" "}
-                at {renderTrendBadge(formatMetricWithUnit(strongestGrowth.topSales.value, tableBasisMode, effectiveCurrencyMode), "stone")}.
-              </>
-            ) : null}
           </>,
         );
       }
@@ -832,12 +844,6 @@ export function DashboardShell({
         <>
           성장 탄력은 <strong className="font-semibold text-stone-900">{strongestGrowth.channel}</strong>이 가장 강하며{" "}
           {renderTrendMetricBadge("YOY", strongestGrowth.displayChannelMetric.yoyPrev)}를 기록하고 있습니다.
-          {strongestGrowth.topSales ? (
-            <>
-              {" "}대표 매출 점포는 <strong className="font-semibold text-stone-900">{formatStoreName(strongestGrowth.topSales.storeName, language)}</strong>로{" "}
-              {renderTrendBadge(formatMetricWithUnit(strongestGrowth.topSales.value, tableBasisMode, effectiveCurrencyMode), "stone")}입니다.
-            </>
-          ) : null}
         </>,
       );
     }
@@ -936,6 +942,7 @@ export function DashboardShell({
       },
     ];
   }, [language, latestYear, selectedMonth]);
+  const compactTrendSummary = useMemo(() => trendSummary.slice(0, 2), [trendSummary]);
 
   useEffect(() => {
     if (!showDataStructureModal && !showRateEditor) return;
@@ -1180,89 +1187,14 @@ export function DashboardShell({
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {topSummaryView === "sales" ? (
-            <>
-              <OverallSummaryCard
-                title={overallCardTitle}
-                basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
-                salesLabel={getSalesLabel(tableBasisMode, language)}
-                salesValue={formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)}
-                currencyLabel={effectiveCurrencyMode}
-                yoyValue={overallCardDisplayMetric.yoyPrev}
-                yoyTwoValue={overallCardDisplayMetric.yoyTwo}
-                salesMetric={overallCardMetric}
-                discountSummary={overallCardDiscountSummary}
-                basisMode={tableBasisMode}
-                storeTooltipMode={cardMetricMode === "month" ? "month" : cardMetricMode === "annual" ? "annual" : "ytd"}
-                localeText={text}
-                language={language}
-              />
-              {channelHighlights.map((item) => (
-                <ChannelHighlightCard
-                  key={item.channel}
-                  channel={formatChannelGroupLabel(item.channel, language)}
-                  basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
-                  selectedSalesLabel={getSalesLabel(tableBasisMode, language)}
-                  selectedSalesValue={formatMetricWithUnit(item.displayChannelMetric.sales, tableBasisMode, effectiveCurrencyMode)}
-                  discountSummary={item.discountSummary}
-                  summaryValue={renderCardComparison(item.channel, item.displayChannelMetric.yoyPrev, item.displayChannelMetric.yoyTwo, text.yoyTwo)}
-                  salesLabel={text.channelTopSales}
-                  yoyLabel={text.channelTopYoy}
-                  salesValue={item.topSales ? `${formatStoreName(item.topSales.storeName, language)} / ${formatMetricWithUnit(item.topSales.value, tableBasisMode, effectiveCurrencyMode)}` : text.noData}
-                  salesDetail={item.topSales ? renderMetricComparison(item.topSales.yoyPrev, item.topSales.yoyTwo, text.yoyTwo) : null}
-                  yoyValue={item.topYoy ? `${formatStoreName(item.topYoy.storeName, language)} / ${formatYoyRate(item.topYoy.value)}` : text.noData}
-                  yoyDetail={item.topYoy ? renderMetricComparison(item.topYoy.value, item.topYoy.yoyTwo, text.yoyTwo) : null}
-                  yoyTone={item.topYoy?.value}
-                  localeText={text}
-                />
-              ))}
-            </>
-          ) : (
-            <>
-              <ProfitSummaryCard
-                cardKey="overall"
-                title={overallCardTitle}
-                basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
-                primaryLabel={language === "en" ? "Operating Profit" : "\uC601\uC5C5\uC774\uC775"}
-                primaryValue={formatMetricWithUnit(overallProfitMetric.operatingProfit, "sales", effectiveCurrencyMode)}
-                secondaryLabel={language === "en" ? "Direct Profit" : "\uC9C1\uC811\uC774\uC775"}
-                secondaryValue={formatMetricWithUnit(overallProfitMetric.directProfit, "sales", effectiveCurrencyMode)}
-                metric={overallProfitMetric}
-                currencyLabel={effectiveCurrencyMode}
-                language={language}
-                expandedProfitBreakdowns={expandedProfitBreakdowns}
-                onToggleBreakdown={(detailKey) => setExpandedProfitBreakdowns((current) => ({ ...current, [detailKey]: !current[detailKey] }))}
-              />
-              {profitChannelSummaries.map((item) => (
-                <ProfitSummaryCard
-                  key={item.channel}
-                  cardKey={item.channel}
-                  title={formatChannelGroupLabel(item.channel, language)}
-                  basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
-                  primaryLabel={language === "en" ? "Direct Profit" : "\uC9C1\uC811\uC774\uC775"}
-                  primaryValue={formatMetricWithUnit(item.metric.directProfit, "sales", effectiveCurrencyMode)}
-                  secondaryLabel={language === "en" ? "Gross Profit" : "\uB9E4\uCD9C\uCD1D\uC774\uC775"}
-                  secondaryValue={formatMetricWithUnit(item.metric.grossProfit, "sales", effectiveCurrencyMode)}
-                  metric={item.metric}
-                  currencyLabel={effectiveCurrencyMode}
-                  language={language}
-                  expandedProfitBreakdowns={expandedProfitBreakdowns}
-                  onToggleBreakdown={(detailKey) => setExpandedProfitBreakdowns((current) => ({ ...current, [detailKey]: !current[detailKey] }))}
-                />
-              ))}
-            </>
-          )}
-        </section>
-
-        <section className="rounded-[24px] border border-white/55 bg-white/80 p-5 shadow-[0_16px_36px_rgba(65,46,24,0.08)]">
-          <div className="space-y-3">
+        <section className="rounded-[22px] border border-white/55 bg-white/78 p-4 shadow-[0_12px_30px_rgba(65,46,24,0.08)]">
+          <div className="space-y-2">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-stone-500">{text.trendSummaryLabel}</p>
-              <h3 className="mt-2 text-xl font-semibold text-stone-900">{text.trendSummaryTitle}</h3>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-stone-500">{text.trendSummaryLabel}</p>
+              <h3 className="mt-1 text-lg font-semibold text-stone-900">{text.trendSummaryTitle}</h3>
             </div>
-            <div className="space-y-2 text-sm leading-7 text-stone-600">
-              {trendSummary.map((line, index) => (
+            <div className="space-y-1 text-sm leading-6 text-stone-600">
+              {compactTrendSummary.map((line, index) => (
                 <p key={index}>{line}</p>
               ))}
             </div>
@@ -1386,6 +1318,82 @@ export function DashboardShell({
             </div>
           </div>
         </section>
+
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          {topSummaryView === "sales" ? (
+            <>
+              <OverallSummaryCard
+                title={overallCardTitle}
+                basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
+                salesLabel={getSalesLabel(tableBasisMode, language)}
+                salesValue={formatMetricValue(overallCardDisplayMetric.sales, tableBasisMode)}
+                currencyLabel={effectiveCurrencyMode}
+                yoyValue={overallCardDisplayMetric.yoyPrev}
+                yoyTwoValue={overallCardDisplayMetric.yoyTwo}
+                salesMetric={overallCardMetric}
+                discountSummary={overallCardDiscountSummary}
+                basisMode={tableBasisMode}
+                storeTooltipMode={cardMetricMode === "month" ? "month" : cardMetricMode === "annual" ? "annual" : "ytd"}
+                localeText={text}
+                language={language}
+              />
+              {channelHighlights.map((item) => (
+                <ChannelHighlightCard
+                  key={item.channel}
+                  channel={formatChannelGroupLabel(item.channel, language)}
+                  basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
+                  selectedSalesLabel={getSalesLabel(tableBasisMode, language)}
+                  selectedSalesValue={formatMetricWithUnit(item.displayChannelMetric.sales, tableBasisMode, effectiveCurrencyMode)}
+                  discountSummary={item.discountSummary}
+                  summaryValue={renderCardComparison(item.channel, item.displayChannelMetric.yoyPrev, item.displayChannelMetric.yoyTwo, text.yoyTwo)}
+                  salesLabel={text.channelTopSales}
+                  yoyLabel={text.channelTopYoy}
+                  salesValue={item.topSales ? `${formatStoreName(item.topSales.storeName, language)} / ${formatMetricWithUnit(item.topSales.value, tableBasisMode, effectiveCurrencyMode)}` : text.noData}
+                  salesDetail={item.topSales ? renderMetricComparison(item.topSales.yoyPrev, item.topSales.yoyTwo, text.yoyTwo) : null}
+                  yoyValue={item.topYoy ? `${formatStoreName(item.topYoy.storeName, language)} / ${formatYoyRate(item.topYoy.value)}` : text.noData}
+                  yoyDetail={item.topYoy ? renderMetricComparison(item.topYoy.value, item.topYoy.yoyTwo, text.yoyTwo) : null}
+                  yoyTone={item.topYoy?.value}
+                  localeText={text}
+                />
+              ))}
+            </>
+          ) : (
+            <>
+              <ProfitSummaryCard
+                cardKey="overall"
+                title={overallCardTitle}
+                basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
+                primaryLabel={language === "en" ? "Operating Profit" : "\uC601\uC5C5\uC774\uC775"}
+                primaryValue={formatMetricWithUnit(overallProfitMetric.operatingProfit, "sales", effectiveCurrencyMode)}
+                secondaryLabel={language === "en" ? "Direct Profit" : "\uC9C1\uC811\uC774\uC775"}
+                secondaryValue={formatMetricWithUnit(overallProfitMetric.directProfit, "sales", effectiveCurrencyMode)}
+                metric={overallProfitMetric}
+                currencyLabel={effectiveCurrencyMode}
+                language={language}
+                expandedProfitBreakdowns={expandedProfitBreakdowns}
+                onToggleBreakdown={(detailKey) => setExpandedProfitBreakdowns((current) => ({ ...current, [detailKey]: !current[detailKey] }))}
+              />
+              {profitChannelSummaries.map((item) => (
+                <ProfitSummaryCard
+                  key={item.channel}
+                  cardKey={item.channel}
+                  title={formatChannelGroupLabel(item.channel, language)}
+                  basis={formatCardBasis(selectedMonth, cardMetricMode, latestYear, language)}
+                  primaryLabel={language === "en" ? "Direct Profit" : "\uC9C1\uC811\uC774\uC775"}
+                  primaryValue={formatMetricWithUnit(item.metric.directProfit, "sales", effectiveCurrencyMode)}
+                  secondaryLabel={language === "en" ? "Gross Profit" : "\uB9E4\uCD9C\uCD1D\uC774\uC775"}
+                  secondaryValue={formatMetricWithUnit(item.metric.grossProfit, "sales", effectiveCurrencyMode)}
+                  metric={item.metric}
+                  currencyLabel={effectiveCurrencyMode}
+                  language={language}
+                  expandedProfitBreakdowns={expandedProfitBreakdowns}
+                  onToggleBreakdown={(detailKey) => setExpandedProfitBreakdowns((current) => ({ ...current, [detailKey]: !current[detailKey] }))}
+                />
+              ))}
+            </>
+          )}
+        </section>
+
       </div>
       {showRateEditor ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/45 px-4 py-6">
@@ -1515,16 +1523,17 @@ export function DashboardShell({
 
 function createMetricCell(
   source: Record<string, number>,
-  tagSource: Record<string, number>,
+  tagSource: Record<string, number> | undefined,
   latestYear: number,
   month: number,
 ): CellMetric {
+  const safeTagSource = tagSource ?? {};
   const sales = source[formatPeriod(latestYear, month)] ?? null;
   const previous = source[formatPeriod(latestYear - 1, month)] ?? null;
   const twoYears = source[formatPeriod(latestYear - 2, month)] ?? null;
-  const tagSales = tagSource[formatPeriod(latestYear, month)] ?? null;
-  const tagPrevious = tagSource[formatPeriod(latestYear - 1, month)] ?? null;
-  const tagTwoYears = tagSource[formatPeriod(latestYear - 2, month)] ?? null;
+  const tagSales = safeTagSource[formatPeriod(latestYear, month)] ?? null;
+  const tagPrevious = safeTagSource[formatPeriod(latestYear - 1, month)] ?? null;
+  const tagTwoYears = safeTagSource[formatPeriod(latestYear - 2, month)] ?? null;
 
   return {
     sales,
@@ -1543,16 +1552,17 @@ function createMetricCell(
 
 function createYtdMetric(
   source: Record<string, number>,
-  tagSource: Record<string, number>,
+  tagSource: Record<string, number> | undefined,
   latestYear: number,
   selectedMonth: number,
 ): CellMetric {
+  const safeTagSource = tagSource ?? {};
   const current = sumPeriods(source, latestYear, selectedMonth);
   const previous = sumPeriods(source, latestYear - 1, selectedMonth);
   const twoYears = sumPeriods(source, latestYear - 2, selectedMonth);
-  const currentTag = sumPeriods(tagSource, latestYear, selectedMonth);
-  const previousTag = sumPeriods(tagSource, latestYear - 1, selectedMonth);
-  const twoYearsTag = sumPeriods(tagSource, latestYear - 2, selectedMonth);
+  const currentTag = sumPeriods(safeTagSource, latestYear, selectedMonth);
+  const previousTag = sumPeriods(safeTagSource, latestYear - 1, selectedMonth);
+  const twoYearsTag = sumPeriods(safeTagSource, latestYear - 2, selectedMonth);
 
   return {
     sales: current,
@@ -1571,16 +1581,17 @@ function createYtdMetric(
 
 function createAnnualMetric(
   annualSource: Record<string, number>,
-  annualTagSource: Record<string, number>,
+  annualTagSource: Record<string, number> | undefined,
   monthlySource: Record<string, number>,
   latestYear: number,
 ): CellMetric {
+  const safeAnnualTagSource = annualTagSource ?? {};
   const sales = annualSource[String(latestYear)] ?? null;
   const previous = annualSource[String(latestYear - 1)] ?? null;
   const twoYears = annualSource[String(latestYear - 2)] ?? null;
-  const tagSales = annualTagSource[String(latestYear)] ?? null;
-  const tagPrevious = annualTagSource[String(latestYear - 1)] ?? null;
-  const tagTwoYears = annualTagSource[String(latestYear - 2)] ?? null;
+  const tagSales = safeAnnualTagSource[String(latestYear)] ?? null;
+  const tagPrevious = safeAnnualTagSource[String(latestYear - 1)] ?? null;
+  const tagTwoYears = safeAnnualTagSource[String(latestYear - 2)] ?? null;
 
   return {
     sales,
@@ -2749,9 +2760,10 @@ function resolveTwRate(periodKey: string, exchangeRates: Record<string, number>,
   return exchangeRates[fallbackKey] ?? 1;
 }
 
-function convertSalesMapToTwd(source: Record<string, number>, exchangeRates: Record<string, number>, referenceYear: number) {
+function convertSalesMapToTwd(source: Record<string, number> | undefined, exchangeRates: Record<string, number>, referenceYear: number) {
+  const safeSource = source ?? {};
   return Object.fromEntries(
-    Object.entries(source).map(([periodKey, amount]) => {
+    Object.entries(safeSource).map(([periodKey, amount]) => {
       const rate = resolveTwRate(periodKey, exchangeRates, referenceYear);
       const converted = rate === 0 ? amount : amount / rate;
       return [periodKey, Math.round(converted * 100) / 100];
