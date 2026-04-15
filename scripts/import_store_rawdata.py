@@ -21,7 +21,9 @@ DIMENSION_COLUMNS = [
     "channel",
     "store_code",
     "store_name",
+    "expense_category",
     "account_name",
+    "account_name_en",
     "account_name_clean",
     "account_level",
     "parent_account_name",
@@ -52,6 +54,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sheet", default="Sheet1", help="Worksheet name to import.")
     parser.add_argument("--output-dir", default="data/normalized", help="Directory to write normalized CSV files.")
     parser.add_argument("--db-path", default="data/store_dashboard.sqlite", help="Path to the SQLite database file.")
+    parser.add_argument(
+        "--csv-only",
+        action="store_true",
+        help="Write normalized CSV files only and skip SQLite/database export steps.",
+    )
     return parser.parse_args()
 
 
@@ -76,8 +83,14 @@ def parse_decimal(value: object) -> str:
 def detect_period_columns(headers: list[object]) -> list[PeriodColumn]:
     period_columns: list[PeriodColumn] = []
     monthly_pattern = re.compile(r"^(\d{2})(\d{2})$")
+    account_en_index = next(
+        (index for index, raw_header in enumerate(headers) if normalize_text(raw_header) == "Account_EN"),
+        None,
+    )
+    if account_en_index is None:
+        raise ValueError("Could not find 'Account_EN' header in worksheet.")
 
-    for index, raw_header in enumerate(headers[6:], start=7):
+    for index, raw_header in enumerate(headers[account_en_index + 1 :], start=account_en_index + 2):
         header = normalize_text(raw_header)
         monthly_match = monthly_pattern.match(header)
         if monthly_match:
@@ -126,6 +139,12 @@ def iter_records(ws) -> tuple[list[dict[str, str]], list[dict[str, str]], int]:
     rows = ws.iter_rows(values_only=True)
     headers = list(next(rows))
     period_columns = detect_period_columns(headers)
+    header_map = {normalize_text(value): index for index, value in enumerate(headers)}
+
+    required_headers = ["브랜드", "국가", "채널", "code", "매장", "비용구분", "계정", "Account_EN"]
+    missing_headers = [header for header in required_headers if header not in header_map]
+    if missing_headers:
+        raise ValueError(f"Missing required headers: {', '.join(missing_headers)}")
 
     monthly_records: list[dict[str, str]] = []
     annual_records: list[dict[str, str]] = []
@@ -135,19 +154,24 @@ def iter_records(ws) -> tuple[list[dict[str, str]], list[dict[str, str]], int]:
 
     for excel_row_number, row in enumerate(rows, start=2):
         store_dims = (
-            normalize_text(row[0]),
-            normalize_text(row[1]),
-            normalize_text(row[2]),
-            normalize_text(row[3]),
-            normalize_text(row[4]),
+            normalize_text(row[header_map["브랜드"]]),
+            normalize_text(row[header_map["국가"]]),
+            normalize_text(row[header_map["채널"]]),
+            normalize_text(row[header_map["code"]]),
+            normalize_text(row[header_map["매장"]]),
         )
-        account_name = normalize_text(row[5])
+        expense_category = normalize_text(row[header_map["비용구분"]])
+        account_name = normalize_text(row[header_map["계정"]])
+        account_name_en = normalize_text(row[header_map["Account_EN"]])
 
         if not any(store_dims) and account_name == "":
             skipped_rows += 1
             continue
 
-        if normalize_text(row[0]) == normalize_text(headers[0]) or account_name == normalize_text(headers[5]):
+        if (
+            normalize_text(row[header_map["브랜드"]]) == normalize_text(headers[header_map["브랜드"]])
+            or account_name == normalize_text(headers[header_map["계정"]])
+        ):
             skipped_rows += 1
             current_parent_account = ""
             current_store_key = None
@@ -168,7 +192,9 @@ def iter_records(ws) -> tuple[list[dict[str, str]], list[dict[str, str]], int]:
             "channel": store_dims[2],
             "store_code": store_dims[3],
             "store_name": store_dims[4],
+            "expense_category": expense_category,
             "account_name": account_name,
+            "account_name_en": account_name_en,
             "account_name_clean": account_name_clean,
             "account_level": account_level,
             "parent_account_name": parent_account_name,
@@ -249,12 +275,14 @@ def reset_database(connection: sqlite3.Connection) -> None:
         CREATE TABLE accounts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             account_name TEXT NOT NULL,
+            account_name_en TEXT NOT NULL,
             account_name_clean TEXT NOT NULL,
             account_level TEXT NOT NULL,
             parent_account_name TEXT NOT NULL,
             account_group_name TEXT NOT NULL,
             UNIQUE (
                 account_name,
+                account_name_en,
                 account_name_clean,
                 account_level,
                 parent_account_name,
@@ -272,7 +300,9 @@ def reset_database(connection: sqlite3.Connection) -> None:
             channel TEXT NOT NULL,
             store_code TEXT NOT NULL,
             store_name TEXT NOT NULL,
+            expense_category TEXT NOT NULL,
             account_name TEXT NOT NULL,
+            account_name_en TEXT NOT NULL,
             account_name_clean TEXT NOT NULL,
             account_level TEXT NOT NULL,
             parent_account_name TEXT NOT NULL,
@@ -299,7 +329,9 @@ def reset_database(connection: sqlite3.Connection) -> None:
             channel TEXT NOT NULL,
             store_code TEXT NOT NULL,
             store_name TEXT NOT NULL,
+            expense_category TEXT NOT NULL,
             account_name TEXT NOT NULL,
+            account_name_en TEXT NOT NULL,
             account_name_clean TEXT NOT NULL,
             account_level TEXT NOT NULL,
             parent_account_name TEXT NOT NULL,
@@ -405,11 +437,12 @@ def build_account_map(
     connection: sqlite3.Connection,
     monthly_rows: list[dict[str, str]],
     annual_rows: list[dict[str, str]],
-) -> dict[tuple[str, str, str, str, str], int]:
-    account_records: dict[tuple[str, str, str, str, str], tuple[str, str, str, str, str]] = {}
+) -> dict[tuple[str, str, str, str, str, str], int]:
+    account_records: dict[tuple[str, str, str, str, str, str], tuple[str, str, str, str, str, str]] = {}
     for row in [*monthly_rows, *annual_rows]:
         key = (
             row["account_name"],
+            row["account_name_en"],
             row["account_name_clean"],
             row["account_level"],
             row["parent_account_name"],
@@ -421,11 +454,12 @@ def build_account_map(
         """
         INSERT INTO accounts (
             account_name,
+            account_name_en,
             account_name_clean,
             account_level,
             parent_account_name,
             account_group_name
-        ) VALUES (?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?)
         """,
         list(account_records.values()),
     )
@@ -434,16 +468,18 @@ def build_account_map(
     return {
         (
             account_name,
+            account_name_en,
             account_name_clean,
             account_level,
             parent_account_name,
             account_group_name,
         ): account_id
-        for account_id, account_name, account_name_clean, account_level, parent_account_name, account_group_name in connection.execute(
+        for account_id, account_name, account_name_en, account_name_clean, account_level, parent_account_name, account_group_name in connection.execute(
             """
             SELECT
                 id,
                 account_name,
+                account_name_en,
                 account_name_clean,
                 account_level,
                 parent_account_name,
@@ -458,12 +494,13 @@ def attach_dimension_ids(
     rows: list[dict[str, str]],
     import_batch_id: int,
     store_map: dict[str, int],
-    account_map: dict[tuple[str, str, str, str, str], int],
+    account_map: dict[tuple[str, str, str, str, str, str], int],
 ) -> list[dict[str, str | int]]:
     enriched_rows: list[dict[str, str | int]] = []
     for row in rows:
         account_key = (
             row["account_name"],
+            row["account_name_en"],
             row["account_name_clean"],
             row["account_level"],
             row["parent_account_name"],
@@ -511,44 +548,48 @@ def main() -> None:
         annual_records,
     )
 
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(db_path)
-    try:
-        reset_database(connection)
-        import_batch_id = insert_import_batch(
-            connection,
-            input_path,
-            args.sheet,
-            len(monthly_records),
-            len(annual_records),
-            skipped_rows,
-        )
-        store_map = build_store_map(connection, monthly_records, annual_records)
-        account_map = build_account_map(connection, monthly_records, annual_records)
-        insert_rows(
-            connection,
-            "monthly_pnl",
-            attach_dimension_ids(monthly_records, import_batch_id, store_map, account_map),
-        )
-        insert_rows(
-            connection,
-            "annual_pnl",
-            attach_dimension_ids(annual_records, import_batch_id, store_map, account_map),
-        )
-    finally:
-        connection.close()
+    if not args.csv_only:
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(db_path)
+        try:
+            reset_database(connection)
+            import_batch_id = insert_import_batch(
+                connection,
+                input_path,
+                args.sheet,
+                len(monthly_records),
+                len(annual_records),
+                skipped_rows,
+            )
+            store_map = build_store_map(connection, monthly_records, annual_records)
+            account_map = build_account_map(connection, monthly_records, annual_records)
+            insert_rows(
+                connection,
+                "monthly_pnl",
+                attach_dimension_ids(monthly_records, import_batch_id, store_map, account_map),
+            )
+            insert_rows(
+                connection,
+                "annual_pnl",
+                attach_dimension_ids(annual_records, import_batch_id, store_map, account_map),
+            )
+        finally:
+            connection.close()
 
-    export_script = Path(__file__).with_name("export_dashboard_data.py")
-    if export_script.exists():
-        subprocess.run([sys.executable, str(export_script)], check=True)
+        export_script = Path(__file__).with_name("export_dashboard_data.py")
+        if export_script.exists():
+            subprocess.run([sys.executable, str(export_script)], check=True)
+    else:
+        export_script = None
 
     print(f"Imported workbook: {input_path}")
     print(f"Monthly rows: {len(monthly_records)}")
     print(f"Annual rows: {len(annual_records)}")
     print(f"Skipped rows: {skipped_rows}")
     print(f"CSV output: {output_dir}")
-    print(f"SQLite DB: {db_path}")
-    if export_script.exists():
+    if not args.csv_only:
+        print(f"SQLite DB: {db_path}")
+    if export_script and export_script.exists():
         print(f"Dashboard data: {(Path('dashboard/data.js')).resolve()}")
 
 

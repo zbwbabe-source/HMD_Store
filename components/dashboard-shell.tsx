@@ -60,6 +60,17 @@ type ProfitCardData = Record<
   >
 >;
 
+type OperatingProfitSummary = Record<
+  string,
+  Record<
+    string,
+    {
+      monthlyOperatingProfit: Record<string, number>;
+      monthlySales: Record<string, number>;
+    }
+  >
+>;
+
 type CellMetric = {
   sales: number | null;
   previousSales: number | null;
@@ -86,6 +97,7 @@ type MonthMetric = CellMetric & {
 type RowKind = "overall-total" | "country-total" | "brand-total" | "channel-total" | "store";
 type ViewMode = "yoy" | "sales";
 type TableBasisMode = "sales" | "perStore" | "tag";
+type TrendTableMode = "sales" | "profit";
 type SortDirection = "desc" | "asc";
 type CardMetricMode = "month" | "ytd" | "annual";
 type TopSummaryView = "sales" | "profit";
@@ -125,6 +137,14 @@ type ProfitBreakdownMetric = {
   operatingOtherDetails: Record<string, number>;
 };
 
+type MonthlyProfitTrendPoint = {
+  month: number;
+  sales: number | null;
+  grossProfit: number | null;
+  directProfit: number | null;
+  operatingProfit: number | null;
+};
+
 type TableRow = {
   kind: RowKind;
   country: string;
@@ -136,6 +156,31 @@ type TableRow = {
   months: MonthMetric[];
   ytd: CellMetric;
   annual: CellMetric;
+};
+
+type ProfitTrendMetric = {
+  value: number | null;
+  previousValue: number | null;
+  twoYearValue: number | null;
+  yoyPrev: number | null;
+  yoyTwo: number | null;
+  salesBase: number | null;
+  previousSalesBase: number | null;
+  twoYearSalesBase: number | null;
+  margin: number | null;
+};
+
+type ProfitTableRow = {
+  kind: RowKind;
+  country: string;
+  brand: string;
+  channel: string;
+  storeName: string;
+  rowKey: string;
+  toggleKey?: string;
+  months: Array<ProfitTrendMetric & { month: number }>;
+  ytd: ProfitTrendMetric;
+  annual: ProfitTrendMetric;
 };
 
 const TEXT = {
@@ -324,36 +369,37 @@ const TAG_BASIS_LABEL = "택가매출 기준";
 const TAG_SALES_LABEL = "택가매출";
 const YTD_STORE_COUNT_SUM_LABEL = "YTD 매장수 합계";
 const ANNUAL_STORE_COUNT_SUM_LABEL = "연간 매장수 합계";
-const TAG_SALES_ACCOUNT = "Tag매출액";
-const SALES_ACCOUNT = "실매출액";
-const COGS_ACCOUNT = "매출원가합계";
-const GROSS_PROFIT_ACCOUNT = "매출총이익";
-const OPERATING_PROFIT_ACCOUNT = "영업이익";
-const PAYROLL_ACCOUNT = "1. 급 여";
-const RENT_ACCOUNT = "4. 임차료";
-const ADVERTISING_ACCOUNT = "9. 광고선전비";
+const TAG_SALES_ACCOUNT = "Tag\uB9E4\uCD9C\uC561";
+const SALES_ACCOUNT = "\uC2E4\uB9E4\uCD9C\uC561";
+const COGS_ACCOUNT = "\uB9E4\uCD9C\uC6D0\uAC00\uD569\uACC4";
+const GROSS_PROFIT_ACCOUNT = "\uB9E4\uCD9C\uCD1D\uC774\uC775";
+const OPERATING_PROFIT_ACCOUNT = "\uC601\uC5C5\uC774\uC775";
+const PAYROLL_ACCOUNT = "1. \uAE09 \uC5EC";
+const RENT_ACCOUNT = "4. \uC784\uCC28\uB8CC";
+const ADVERTISING_ACCOUNT = "9. \uAD11\uACE0\uC120\uC804\uBE44";
 const EXPENSE_ACCOUNT_SET = new Set([
-  "1. 급 여",
+  "1. \uAE09 \uC5EC",
   "2. TRAVEL & MEAL",
-  "3. 피복비(유니폼)",
-  "4. 임차료",
-  "5. 유지보수비",
-  "6. 수도광열비",
-  "7. 소모품비",
-  "8. 통신비",
-  "9. 광고선전비",
-  "10. 지급수수료",
-  "11. 운반비",
-  "12. 기타 수수료(매장관리비 외)",
-  "13. 보험료",
-  "14. 감가상각비",
-  "15. 면세점 직접비",
+  "3. \uD53C\uBCF5\uBE44(\uC720\uB2C8\uD3FC)",
+  "4. \uC784\uCC28\uB8CC",
+  "5. \uC720\uC9C0\uBCF4\uC218\uBE44",
+  "6. \uC218\uB3C4\uAD11\uC5F4\uBE44",
+  "7. \uC18C\uBAA8\uD488\uBE44",
+  "8. \uD1B5\uC2E0\uBE44",
+  "9. \uAD11\uACE0\uC120\uC804\uBE44",
+  "10. \uC9C0\uAE09\uC218\uC218\uB8CC",
+  "11. \uC6B4\uBC18\uBE44",
+  "12. \uAE30\uD0C0 \uC218\uC218\uB8CC(\uB9E4\uC7A5\uAD00\uB9AC\uBE44 \uC678)",
+  "13. \uBCF4\uD5D8\uB8CC",
+  "14. \uAC10\uAC00\uC0C1\uAC01\uBE44",
+  "15. \uBA74\uC138\uC810 \uC9C1\uC811\uBE44",
 ]);
 
 export function DashboardShell({
   data,
   storeMonthlySales,
   profitCardData,
+  operatingProfitSummary,
   twExchangeRates,
   initialActualPeriod,
   canEditPeriod,
@@ -362,6 +408,7 @@ export function DashboardShell({
   data: DashboardData;
   storeMonthlySales: StoreMonthlySales;
   profitCardData: ProfitCardData;
+  operatingProfitSummary: OperatingProfitSummary;
   twExchangeRates: Record<string, number>;
   initialActualPeriod?: string;
   canEditPeriod: boolean;
@@ -383,6 +430,7 @@ export function DashboardShell({
   const [expandedProfitBreakdowns, setExpandedProfitBreakdowns] = useState<Record<string, boolean>>({});
   const [viewMode, setViewMode] = useState<ViewMode>("yoy");
   const [tableBasisMode, setTableBasisMode] = useState<TableBasisMode>("sales");
+  const [trendTableMode, setTrendTableMode] = useState<TrendTableMode>("sales");
   const [showDataStructureModal, setShowDataStructureModal] = useState(false);
   const [sortMonth, setSortMonth] = useState<number | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -399,6 +447,7 @@ export function DashboardShell({
   const storeRows = region?.storeYoyMultiYear ?? [];
   const rawRegionSales = storeMonthlySales[regionKey] ?? {};
   const rawRegionProfit = profitCardData[regionKey] ?? {};
+  const rawOperatingProfitSummary = operatingProfitSummary[regionKey] ?? {};
   const countryLabel = REGION_LABELS[regionKey] ?? regionKey;
   const effectiveCurrencyMode: CurrencyMode = regionKey === "TW" ? currencyMode : "HKD";
   const currencyUnitLabel = effectiveCurrencyMode === "TWD" ? "1k TWD" : "1k HKD";
@@ -441,6 +490,10 @@ export function DashboardShell({
       ]),
     );
   }, [editableTwExchangeRates, effectiveCurrencyMode, latestYear, rawRegionProfit, regionKey]);
+  const selectedOperatingProfitSummary = useMemo(() => {
+    const brandKey = selectedBrand === "ALL" ? "ALL" : selectedBrand;
+    return rawOperatingProfitSummary[brandKey] ?? rawOperatingProfitSummary.ALL ?? { monthlyOperatingProfit: {}, monthlySales: {} };
+  }, [rawOperatingProfitSummary, selectedBrand]);
   const availableBrands = useMemo(() => {
     const brands = Array.from(
       new Set(
@@ -756,6 +809,210 @@ export function DashboardShell({
     () => Object.values(regionProfit).filter((store) => selectedBrand === "ALL" || store.brand === selectedBrand),
     [regionProfit, selectedBrand],
   );
+  const profitTableRows = useMemo<ProfitTableRow[]>(() => {
+    return filteredProfitStores
+      .map((store, index) => {
+        const rowCountry = regionKey === "HKMC" ? (store.country === "MC" ? "마카오" : "홍콩") : countryLabel;
+        const toggleKey = `${rowCountry}__${store.brand}__${store.channel}`;
+        const priorYearStore = buildProfitMetricForStore(store, latestYear - 1, selectedMonth, cardMetricMode, discountVatFactor);
+
+        return {
+          kind: "store" as const,
+          country: rowCountry,
+          brand: store.brand,
+          channel: store.channel,
+          storeName: store.storeName,
+          rowKey: `profit-${store.brand}-${store.channel}-${store.storeName}-${index}`,
+          toggleKey,
+          months: MONTH_OPTIONS.map((month) => {
+            const current = buildProfitMetricForStore(store, latestYear, month, "month", discountVatFactor);
+            const prevYear = buildProfitMetricForStore(store, latestYear - 1, month, "month", discountVatFactor);
+            return {
+              month,
+              ...createProfitTrendMetric(
+                current.directProfit,
+                current.previousDirectProfit,
+                prevYear.previousDirectProfit,
+                current.sales,
+                current.previousSales,
+                prevYear.previousSales,
+              ),
+            };
+          }),
+          ytd: createProfitTrendMetric(
+            buildProfitMetricForStore(store, latestYear, selectedMonth, "ytd", discountVatFactor).directProfit,
+            buildProfitMetricForStore(store, latestYear, selectedMonth, "ytd", discountVatFactor).previousDirectProfit,
+            buildProfitMetricForStore(store, latestYear - 1, selectedMonth, "ytd", discountVatFactor).previousDirectProfit,
+            buildProfitMetricForStore(store, latestYear, selectedMonth, "ytd", discountVatFactor).sales,
+            buildProfitMetricForStore(store, latestYear, selectedMonth, "ytd", discountVatFactor).previousSales,
+            buildProfitMetricForStore(store, latestYear - 1, selectedMonth, "ytd", discountVatFactor).previousSales,
+          ),
+          annual: createProfitTrendMetric(
+            buildProfitMetricForStore(store, latestYear, 12, "annual", discountVatFactor).directProfit,
+            buildProfitMetricForStore(store, latestYear, 12, "annual", discountVatFactor).previousDirectProfit,
+            priorYearStore.previousDirectProfit,
+            buildProfitMetricForStore(store, latestYear, 12, "annual", discountVatFactor).sales,
+            buildProfitMetricForStore(store, latestYear, 12, "annual", discountVatFactor).previousSales,
+            priorYearStore.previousSales,
+          ),
+        };
+      })
+      .sort((a, b) => {
+        if (a.brand !== b.brand) return a.brand.localeCompare(b.brand);
+        if (a.channel !== b.channel) return a.channel.localeCompare(b.channel);
+        return a.storeName.localeCompare(b.storeName);
+      });
+  }, [cardMetricMode, countryLabel, discountVatFactor, filteredProfitStores, latestYear, regionKey, selectedMonth]);
+  const visibleProfitRows = useMemo<ProfitTableRow[]>(() => {
+    if (profitTableRows.length === 0) return [];
+
+    const rows: ProfitTableRow[] = [];
+    rows.push(
+      createProfitSummaryRow("overall-total", profitTableRows, {
+        country: "전체",
+        brand: "-",
+        channel: "-",
+        storeName: text.overallTotal,
+        rowKey: `${countryLabel}-profit-overall-total`,
+      }),
+    );
+
+    const countryGroups = new Map<string, ProfitTableRow[]>();
+    for (const row of profitTableRows) {
+      const group = countryGroups.get(row.country) ?? [];
+      group.push(row);
+      countryGroups.set(row.country, group);
+    }
+
+    for (const country of getCountryOrder(regionKey, countryGroups as unknown as Map<string, TableRow[]>)) {
+      const countryRows = countryGroups.get(country) ?? [];
+      rows.push(
+        createProfitSummaryRow("country-total", countryRows, {
+          country,
+          brand: "-",
+          channel: "-",
+          storeName: text.countryTotal,
+          rowKey: `${country}-profit-country-total`,
+        }),
+      );
+
+      const brandGroups = new Map<string, ProfitTableRow[]>();
+      for (const row of countryRows) {
+        const group = brandGroups.get(row.brand) ?? [];
+        group.push(row);
+        brandGroups.set(row.brand, group);
+      }
+
+      for (const [brand, brandRows] of brandGroups.entries()) {
+        rows.push(
+          createProfitSummaryRow("brand-total", brandRows, {
+            country,
+            brand,
+            channel: "-",
+            storeName: text.brandTotal,
+            rowKey: `${country}-${brand}-profit-brand-total`,
+          }),
+        );
+
+        const channelGroups = new Map<string, ProfitTableRow[]>();
+        for (const row of brandRows) {
+          const group = channelGroups.get(row.channel) ?? [];
+          group.push(row);
+          channelGroups.set(row.channel, group);
+        }
+
+        for (const [channel, channelRows] of channelGroups.entries()) {
+          const toggleKey = `${country}__${brand}__${channel}`;
+          rows.push(
+            createProfitSummaryRow("channel-total", channelRows, {
+              country,
+              brand,
+              channel,
+              storeName: text.channelTotal,
+              rowKey: `${toggleKey}-profit-channel-total`,
+              toggleKey,
+            }),
+          );
+
+          if (expandedChannels[toggleKey] ?? false) {
+            rows.push(...sortProfitRowsForMonth(channelRows, sortMonth, sortDirection, viewMode));
+          }
+        }
+      }
+    }
+
+    return rows;
+  }, [countryLabel, expandedChannels, profitTableRows, regionKey, sortDirection, sortMonth, text, viewMode]);
+  const overallOperatingExpenseMetrics = useMemo(() => {
+    const byMode = (month: number, mode: CardMetricMode) =>
+      aggregateProfitMetrics(filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear, month, mode, discountVatFactor)), discountVatFactor);
+    return {
+      months: MONTH_OPTIONS.map((month) => {
+        const current = byMode(month, "month");
+        const previous = aggregateProfitMetrics(
+          filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear - 1, month, "month", discountVatFactor)),
+          discountVatFactor,
+        );
+        return {
+          month,
+          ...createProfitTrendMetric(
+            getOperatingExpenseValue(current),
+            negateNullable(sumProfitValues(current.operatingPayroll, current.operatingRent, current.advertising, current.operatingOther)),
+            previous ? getOperatingExpenseValue(previous) : null,
+            current.sales,
+            current.previousSales,
+            previous.sales,
+          ),
+        };
+      }),
+      ytd: (() => {
+        const current = byMode(selectedMonth, "ytd");
+        const previous = aggregateProfitMetrics(
+          filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear - 1, selectedMonth, "ytd", discountVatFactor)),
+          discountVatFactor,
+        );
+        return createProfitTrendMetric(
+          getOperatingExpenseValue(current),
+          negateNullable(sumProfitValues(current.operatingPayroll, current.operatingRent, current.advertising, current.operatingOther)),
+          previous ? getOperatingExpenseValue(previous) : null,
+          current.sales,
+          current.previousSales,
+          previous.sales,
+        );
+      })(),
+      annual: (() => {
+        const current = byMode(12, "annual");
+        const previous = aggregateProfitMetrics(
+          filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear - 1, 12, "annual", discountVatFactor)),
+          discountVatFactor,
+        );
+        return createProfitTrendMetric(
+          getOperatingExpenseValue(current),
+          negateNullable(sumProfitValues(current.operatingPayroll, current.operatingRent, current.advertising, current.operatingOther)),
+          previous ? getOperatingExpenseValue(previous) : null,
+          current.sales,
+          current.previousSales,
+          previous.sales,
+        );
+      })(),
+    };
+  }, [discountVatFactor, filteredProfitStores, latestYear, selectedMonth]);
+  const overallOperatingProfitMetrics = useMemo(() => {
+    const byMode = (year: number, month: number, mode: CardMetricMode) =>
+      createProfitTrendMetric(
+        sumAccountPeriods(selectedOperatingProfitSummary.monthlyOperatingProfit, year, month, mode),
+        sumAccountPeriods(selectedOperatingProfitSummary.monthlyOperatingProfit, year - 1, month, mode),
+        sumAccountPeriods(selectedOperatingProfitSummary.monthlyOperatingProfit, year - 2, month, mode),
+        sumAccountPeriods(selectedOperatingProfitSummary.monthlySales, year, month, mode),
+        sumAccountPeriods(selectedOperatingProfitSummary.monthlySales, year - 1, month, mode),
+        sumAccountPeriods(selectedOperatingProfitSummary.monthlySales, year - 2, month, mode),
+      );
+    return {
+      months: MONTH_OPTIONS.map((month) => ({ month, ...byMode(latestYear, month, "month") })),
+      ytd: byMode(latestYear, selectedMonth, "ytd"),
+      annual: byMode(latestYear, 12, "annual"),
+    };
+  }, [latestYear, selectedMonth, selectedOperatingProfitSummary]);
   const overallProfitMetric = useMemo(
     () => aggregateProfitMetrics(filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear, selectedMonth, cardMetricMode, discountVatFactor)), discountVatFactor),
     [cardMetricMode, discountVatFactor, filteredProfitStores, latestYear, selectedMonth],
@@ -769,6 +1026,24 @@ export function DashboardShell({
       };
     });
   }, [cardMetricMode, channelHighlights, discountVatFactor, filteredProfitStores, latestYear, selectedMonth]);
+  const monthlyProfitTrend = useMemo<MonthlyProfitTrendPoint[]>(
+    () =>
+      MONTH_OPTIONS.map((month) => {
+        const metric = aggregateProfitMetrics(
+          filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear, month, "month", discountVatFactor)),
+          discountVatFactor,
+        );
+
+        return {
+          month,
+          sales: metric.sales,
+          grossProfit: metric.grossProfit,
+          directProfit: metric.directProfit,
+          operatingProfit: metric.operatingProfit,
+        };
+      }),
+    [discountVatFactor, filteredProfitStores, latestYear],
+  );
 
   const trendSummary = useMemo(() => {
     const strongestGrowth = channelHighlights
@@ -1205,14 +1480,30 @@ export function DashboardShell({
             <div className="flex flex-wrap items-end gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.22em] text-stone-500">{countryLabel}</p>
-                <h2 className="mt-2 text-2xl font-semibold text-stone-900">{latestYear} {text.annualTable}</h2>
+                <h2 className="mt-2 text-2xl font-semibold text-stone-900">
+                  {latestYear} {trendTableMode === "profit" ? (language === "en" ? "Store Monthly Profit Trend" : "매장월별 손익추세") : text.annualTable}
+                </h2>
               </div>
               <div className="flex flex-wrap gap-2">
+                <ToggleButton
+                  active={trendTableMode === "sales"}
+                  onClick={() => setTrendTableMode("sales")}
+                >
+                  {language === "en" ? "Sales Trend" : "매출액 보기"}
+                </ToggleButton>
+                <ToggleButton
+                  active={trendTableMode === "profit"}
+                  onClick={() => setTrendTableMode("profit")}
+                >
+                  {language === "en" ? "Profit Trend" : "손익추세"}
+                </ToggleButton>
                 <ToggleButton
                   active={viewMode === "sales"}
                   onClick={() => setViewMode(viewMode === "yoy" ? "sales" : "yoy")}
                 >
-                  {viewMode === "yoy" ? text.viewSales : text.viewYoy}
+                  {viewMode === "yoy"
+                    ? (language === "en" ? "Value View" : "숫자 보기")
+                    : (language === "en" ? "YOY View" : "YOY 보기")}
                 </ToggleButton>
                 <ToggleButton active={allExpanded} onClick={toggleAllChannels}>
                   {allExpanded ? text.collapseAll : text.expandAll}
@@ -1221,7 +1512,11 @@ export function DashboardShell({
             </div>
             <div className="text-right text-sm text-stone-500">
               <p>{text.ytdRight}</p>
-              <p className="mt-1">{`${text.unit.replace("1k HKD", currencyUnitLabel)} ${unitBasisLabel}`}</p>
+              <p className="mt-1">
+                {trendTableMode === "profit"
+                  ? `${text.unit.replace("1k HKD", currencyUnitLabel)} ${language === "en" ? "Store rows: Direct Profit / Top row: Operating Profit" : "매장 행: 직접이익 / 최상단: 영업이익"}`
+                  : `${text.unit.replace("1k HKD", currencyUnitLabel)} ${unitBasisLabel}`}
+              </p>
             </div>
           </div>
 
@@ -1261,7 +1556,8 @@ export function DashboardShell({
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleRows.length > 0 ? (
+                  {trendTableMode === "sales" ? (
+                    visibleRows.length > 0 ? (
                     visibleRows.map((row) => {
                       const isSummaryRow = row.kind !== "store";
                       const isChannelTotal = row.kind === "channel-total";
@@ -1309,6 +1605,110 @@ export function DashboardShell({
                         </tr>
                       );
                     })
+                    ) : (
+                    <EmptyRow colSpan={18} message={text.emptyRows} />
+                    )
+                  ) : profitTableRows.length > 0 ? (
+                    <>
+                      <tr className="border-t-2 border-stone-300 bg-emerald-50/70">
+                        <td className="px-2 py-2 font-semibold text-stone-700">{language === "en" ? "All" : "전체"}</td>
+                        <td className="px-2 py-2 font-semibold text-stone-700">-</td>
+                        <td className="px-2 py-2 font-semibold text-stone-700">-</td>
+                        <td className="px-2 py-2 font-semibold text-stone-900">
+                          {language === "en" ? "Operating Profit (Top Summary)" : "영업이익 합계"}
+                        </td>
+                        {overallOperatingProfitMetrics.months.map((month) => (
+                          <Fragment key={`op-${month.month}`}>
+                            <td className={`px-2 py-2 align-top ${monthCellTone(month.month, selectedMonth)}`}>
+                              <ProfitDeltaCell metric={month} emphasize showMargin language={language} />
+                            </td>
+                            {month.month === selectedMonth ? (
+                              <td className="bg-stone-200/80 px-2 py-2 align-top">
+                                <ProfitDeltaCell metric={overallOperatingProfitMetrics.ytd} emphasize showMargin language={language} />
+                              </td>
+                            ) : null}
+                          </Fragment>
+                        ))}
+                        <td className="bg-stone-50/90 px-2 py-2 align-top">
+                          <ProfitDeltaCell metric={overallOperatingProfitMetrics.annual} emphasize showMargin language={language} />
+                        </td>
+                      </tr>
+                      {visibleProfitRows.map((row) => {
+                        const isSummaryRow = row.kind !== "store";
+                        const isChannelTotal = row.kind === "channel-total";
+                        const isExpanded = row.toggleKey ? (expandedChannels[row.toggleKey] ?? false) : false;
+
+                        return (
+                          <tr key={row.rowKey} className={`border-t border-stone-200/70 ${summaryRowClass(row.kind)}`}>
+                            <td className="px-2 py-2 font-medium text-stone-700">{formatCountryLabel(row.country, language)}</td>
+                            <td className="px-2 py-2 font-medium text-stone-700">{row.brand}</td>
+                            <td className="px-2 py-2 font-medium text-stone-700">{formatChannelLabel(row.channel, language)}</td>
+                            <td className={`px-2 py-2 ${isSummaryRow ? "font-semibold text-stone-900" : "text-stone-900"}`}>
+                              {isChannelTotal && row.toggleKey ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedChannels((current) => ({
+                                    ...current,
+                                    [row.toggleKey!]: !(current[row.toggleKey!] ?? false),
+                                  }))}
+                                  className="inline-flex items-center gap-2 text-left font-semibold text-stone-900"
+                                >
+                                  <span className="inline-flex h-5 w-5 items-center justify-center text-xs text-stone-500">
+                                    {isExpanded ? "▾" : "▸"}
+                                  </span>
+                                  <span>{formatStoreName(row.storeName, language)}</span>
+                                </button>
+                              ) : (
+                                <>
+                                  {formatStoreName(row.storeName, language)}
+                                  {!isSummaryRow ? (
+                                    <span className="ml-2 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+                                      {language === "en" ? "Direct Profit" : "직접이익"}
+                                    </span>
+                                  ) : null}
+                                </>
+                              )}
+                            </td>
+                            {row.months.map((month) => (
+                              <Fragment key={`${row.rowKey}-${month.month}`}>
+                                <td className={`px-2 py-2 align-top ${monthCellTone(month.month, selectedMonth)}`}>
+                                  <ProfitDeltaCell metric={month} emphasize={isSummaryRow} language={language} />
+                                </td>
+                                {month.month === selectedMonth ? (
+                                  <td className="bg-stone-200/80 px-2 py-2 align-top">
+                                    <ProfitDeltaCell metric={row.ytd} emphasize language={language} />
+                                  </td>
+                                ) : null}
+                              </Fragment>
+                            ))}
+                            <td className="bg-stone-50/90 px-2 py-2 align-top">
+                              <ProfitDeltaCell metric={row.annual} emphasize={isSummaryRow} language={language} />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      <tr className="border-t-2 border-stone-300 bg-rose-50/60">
+                        <td className="px-2 py-2 font-semibold text-stone-700">{language === "en" ? "All" : "전체"}</td>
+                        <td className="px-2 py-2 font-semibold text-stone-700">-</td>
+                        <td className="px-2 py-2 font-semibold text-stone-700">-</td>
+                        <td className="px-2 py-2 font-semibold text-stone-900">{language === "en" ? "Operating Expense" : "영업비"}</td>
+                        {overallOperatingExpenseMetrics.months.map((month) => (
+                          <Fragment key={`opex-${month.month}`}>
+                            <td className={`px-2 py-2 align-top ${monthCellTone(month.month, selectedMonth)}`}>
+                              <ProfitDeltaCell metric={month} emphasize language={language} />
+                            </td>
+                            {month.month === selectedMonth ? (
+                              <td className="bg-stone-200/80 px-2 py-2 align-top">
+                                <ProfitDeltaCell metric={overallOperatingExpenseMetrics.ytd} emphasize language={language} />
+                              </td>
+                            ) : null}
+                          </Fragment>
+                        ))}
+                        <td className="bg-stone-50/90 px-2 py-2 align-top">
+                          <ProfitDeltaCell metric={overallOperatingExpenseMetrics.annual} emphasize language={language} />
+                        </td>
+                      </tr>
+                    </>
                   ) : (
                     <EmptyRow colSpan={18} message={text.emptyRows} />
                   )}
@@ -1391,6 +1791,16 @@ export function DashboardShell({
               ))}
             </>
           )}
+        </section>
+
+        <section className="grid gap-4">
+          <MonthlyProfitTrendCard
+            title={language === "en" ? "Monthly Profit Trend" : "월별 손익추세"}
+            subtitle={language === "en" ? `FY ${latestYear} monthly flow from normalized CSV` : `${latestYear}년 월별 손익 흐름`}
+            points={monthlyProfitTrend}
+            currencyLabel={effectiveCurrencyMode}
+            language={language}
+          />
         </section>
 
       </div>
@@ -1686,6 +2096,107 @@ function aggregateMetricCells(metrics: CellMetric[]): CellMetric {
   };
 }
 
+function getOperatingExpenseValue(metric: ProfitBreakdownMetric) {
+  const total = sumProfitValues(metric.operatingPayroll, metric.operatingRent, metric.advertising, metric.operatingOther);
+  return total == null ? null : -total;
+}
+
+function negateNullable(value: number | null | undefined) {
+  return value == null || Number.isNaN(value) ? null : -value;
+}
+
+function createProfitTrendMetric(
+  currentValue: number | null | undefined,
+  previousValue: number | null | undefined,
+  twoYearValue: number | null | undefined,
+  currentSales: number | null | undefined,
+  previousSales: number | null | undefined,
+  twoYearSales: number | null | undefined,
+): ProfitTrendMetric {
+  const value = currentValue ?? null;
+  const prev = previousValue ?? null;
+  const twoYear = twoYearValue ?? null;
+  const salesBase = currentSales ?? null;
+  const previousSalesBase = previousSales ?? null;
+  const twoYearSalesBase = twoYearSales ?? null;
+
+  return {
+    value,
+    previousValue: prev,
+    twoYearValue: twoYear,
+    yoyPrev: calculateRatioChange(value, prev),
+    yoyTwo: calculateRatioChange(value, twoYear),
+    salesBase,
+    previousSalesBase,
+    twoYearSalesBase,
+    margin: calculateMarginValue(value, salesBase),
+  };
+}
+
+function aggregateProfitTrendMetrics(metrics: ProfitTrendMetric[]): ProfitTrendMetric {
+  const sumField = (selector: (metric: ProfitTrendMetric) => number | null) =>
+    metrics.reduce((sum, metric) => sum + (selector(metric) ?? 0), 0);
+  const hasField = (selector: (metric: ProfitTrendMetric) => number | null) => metrics.some((metric) => selector(metric) != null);
+
+  const value = hasField((metric) => metric.value) ? sumField((metric) => metric.value) : null;
+  const previousValue = hasField((metric) => metric.previousValue) ? sumField((metric) => metric.previousValue) : null;
+  const twoYearValue = hasField((metric) => metric.twoYearValue) ? sumField((metric) => metric.twoYearValue) : null;
+  const salesBase = hasField((metric) => metric.salesBase) ? sumField((metric) => metric.salesBase) : null;
+  const previousSalesBase = hasField((metric) => metric.previousSalesBase) ? sumField((metric) => metric.previousSalesBase) : null;
+  const twoYearSalesBase = hasField((metric) => metric.twoYearSalesBase) ? sumField((metric) => metric.twoYearSalesBase) : null;
+
+  return {
+    value,
+    previousValue,
+    twoYearValue,
+    yoyPrev: calculateRatioChange(value, previousValue),
+    yoyTwo: calculateRatioChange(value, twoYearValue),
+    salesBase,
+    previousSalesBase,
+    twoYearSalesBase,
+    margin: calculateMarginValue(value, salesBase),
+  };
+}
+
+function sumAccountPeriods(
+  source: Record<string, number> | undefined,
+  year: number,
+  selectedMonth: number,
+  mode: CardMetricMode,
+) {
+  if (!source) return null;
+  return sumProfitPeriods(source, year, selectedMonth, mode);
+}
+
+function createProfitSummaryRow(
+  kind: RowKind,
+  rows: ProfitTableRow[],
+  values: {
+    country: string;
+    brand: string;
+    channel: string;
+    storeName: string;
+    rowKey: string;
+    toggleKey?: string;
+  },
+): ProfitTableRow {
+  return {
+    kind,
+    country: values.country,
+    brand: values.brand,
+    channel: values.channel,
+    storeName: values.storeName,
+    rowKey: values.rowKey,
+    toggleKey: values.toggleKey,
+    months: MONTH_OPTIONS.map((month, index) => ({
+      month,
+      ...aggregateProfitTrendMetrics(rows.map((row) => row.months[index])),
+    })),
+    ytd: aggregateProfitTrendMetrics(rows.map((row) => row.ytd)),
+    annual: aggregateProfitTrendMetrics(rows.map((row) => row.annual)),
+  };
+}
+
 function sumPeriods(source: Record<string, number>, year: number, selectedMonth: number) {
   let total = 0;
   let hasValue = false;
@@ -1868,6 +2379,169 @@ function ChannelHighlightCard({
           <p className="text-xs uppercase tracking-[0.16em] text-stone-400">{yoyLabel}</p>
           <p className={`mt-1 text-base font-semibold ${valueTone(yoyTone ?? null).replace("text-stone-400", "text-stone-900")}`}>{yoyValue}</p>
           {yoyDetail ? <p className="mt-1 text-[12px]">{yoyDetail}</p> : null}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function MonthlyProfitTrendCard({
+  title,
+  subtitle,
+  points,
+  currencyLabel,
+  language,
+}: {
+  title: string;
+  subtitle: string;
+  points: MonthlyProfitTrendPoint[];
+  currencyLabel: CurrencyMode;
+  language: Language;
+}) {
+  const series = [
+    {
+      key: "sales",
+      label: language === "en" ? "Net Sales" : "\uC2E4\uD310\uB9E4\uCD9C",
+      color: "#0f766e",
+      values: points.map((point) => point.sales),
+    },
+    {
+      key: "grossProfit",
+      label: language === "en" ? "Gross Profit" : "\uB9E4\uCD9C\uCD1D\uC774\uC775",
+      color: "#2563eb",
+      values: points.map((point) => point.grossProfit),
+    },
+    {
+      key: "directProfit",
+      label: language === "en" ? "Direct Profit" : "\uC9C1\uC811\uC774\uC775",
+      color: "#d97706",
+      values: points.map((point) => point.directProfit),
+    },
+    {
+      key: "operatingProfit",
+      label: language === "en" ? "Operating Profit" : "\uC601\uC5C5\uC774\uC775",
+      color: "#dc2626",
+      values: points.map((point) => point.operatingProfit),
+    },
+  ] as const;
+
+  const numericValues = series.flatMap((item) => item.values).filter((value): value is number => value != null && !Number.isNaN(value));
+  const minValue = numericValues.length > 0 ? Math.min(...numericValues, 0) : 0;
+  const maxValue = numericValues.length > 0 ? Math.max(...numericValues, 0) : 0;
+  const range = maxValue - minValue || 1;
+
+  const width = 100;
+  const height = 40;
+  const xForIndex = (index: number) => (points.length <= 1 ? 0 : (index / (points.length - 1)) * width);
+  const yForValue = (value: number) => height - ((value - minValue) / range) * height;
+  const axisTicks = [1, 0.75, 0.5, 0.25, 0].map((ratio) => ({
+    ratio,
+    value: minValue + range * ratio,
+  }));
+
+  return (
+    <article className="rounded-[24px] border border-white/55 bg-white/88 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-base font-semibold leading-snug text-stone-900">{title}</p>
+          <p className="mt-1 text-xs text-stone-400">{subtitle}</p>
+        </div>
+        <p className="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-600">K {currencyLabel}</p>
+      </div>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+        <div className="rounded-[20px] border border-stone-200/80 bg-[#fcfaf6] p-3">
+          <div className="mb-3 flex flex-wrap gap-2">
+            {series.map((item) => (
+              <span
+                key={item.key}
+                className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-semibold text-stone-700"
+              >
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                {item.label}
+              </span>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-[56px_minmax(0,1fr)] gap-3">
+            <div className="relative h-56 text-[11px] font-medium text-stone-500">
+              {axisTicks.map((tick) => (
+                <span
+                  key={tick.ratio}
+                  className="absolute right-0 -translate-y-1/2"
+                  style={{ top: `${(1 - tick.ratio) * 100}%` }}
+                >
+                  {formatSalesCell(tick.value)}
+                </span>
+              ))}
+            </div>
+            <svg viewBox={`0 0 ${width} ${height}`} className="h-56 w-full overflow-visible">
+              {axisTicks.map((tick) => {
+                const y = height - tick.ratio * height;
+                return <line key={tick.ratio} x1="0" y1={y} x2={width} y2={y} stroke="#e7e5e4" strokeDasharray="1.5 2" strokeWidth="0.4" />;
+              })}
+              {series.map((item) => {
+                const coords = item.values
+                  .map((value, index) => (value == null ? null : `${xForIndex(index)},${yForValue(value)}`))
+                  .filter((value): value is string => value != null);
+                if (coords.length === 0) return null;
+                return <polyline key={item.key} fill="none" stroke={item.color} strokeWidth="1.3" points={coords.join(" ")} />;
+              })}
+              {series.map((item) =>
+                item.values.map((value, index) =>
+                  value == null ? null : (
+                    <circle key={`${item.key}-${index}`} cx={xForIndex(index)} cy={yForValue(value)} r="1.1" fill={item.color} />
+                  ),
+                ),
+              )}
+            </svg>
+          </div>
+
+          <div className="mt-2 grid grid-cols-6 gap-2 text-[11px] font-medium text-stone-500 md:grid-cols-12">
+            {points.map((point) => (
+              <span key={point.month} className="text-center">
+                {language === "en" ? MONTH_NAMES_EN[point.month - 1] : `${point.month}\uC6D4`}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
+          {series.map((item) => {
+            const latestValue = item.values[item.values.length - 1];
+            const firstValue = item.values[0];
+            const change = calculateRatioChange(latestValue, firstValue);
+
+            return (
+              <div key={item.key} className="rounded-[18px] border border-stone-200 bg-[#fcfaf6] px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                    <p className="text-sm font-semibold text-stone-900">{item.label}</p>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${pillTone(change)}`}>
+                    {language === "en" ? "Jan to Latest" : "\uC5F0\uCD08 \uB300\uBE44"} {formatYoyRate(change)}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400">
+                      {language === "en" ? "Latest" : "\uCD5C\uADFC \uC6D4"}
+                    </p>
+                    <p className="mt-1 font-semibold text-stone-900">{formatProfitAmount(latestValue)} K {currencyLabel}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400">
+                      {language === "en" ? "Peak" : "\uC5F0\uC911 \uCD5C\uACE0"}
+                    </p>
+                    <p className="mt-1 font-semibold text-stone-900">
+                      {formatProfitAmount(maxSeriesValue(item.values))} K {currencyLabel}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </article>
@@ -2301,6 +2975,23 @@ function sortRowsForMonth(rows: TableRow[], sortMonth: number | null, sortDirect
   });
 }
 
+function getProfitSortValue(row: ProfitTableRow, sortMonth: number, viewMode: ViewMode) {
+  const metric = row.months[sortMonth - 1];
+  if (!metric) return Number.NEGATIVE_INFINITY;
+  const value = viewMode === "yoy" ? metric.yoyPrev : metric.value;
+  return value == null || Number.isNaN(value) ? Number.NEGATIVE_INFINITY : value;
+}
+
+function sortProfitRowsForMonth(rows: ProfitTableRow[], sortMonth: number | null, sortDirection: SortDirection, viewMode: ViewMode) {
+  if (sortMonth == null) return rows;
+  return [...rows].sort((a, b) => {
+    const rawDiff = getProfitSortValue(b, sortMonth, viewMode) - getProfitSortValue(a, sortMonth, viewMode);
+    const diff = sortDirection === "desc" ? rawDiff : -rawDiff;
+    if (diff !== 0) return diff;
+    return a.storeName.localeCompare(b.storeName);
+  });
+}
+
 function monthHeaderTone(month: number, selectedMonth: number) {
   if (month === selectedMonth) return "bg-amber-200/80 text-stone-900";
   if (month < selectedMonth) return "bg-amber-50/90";
@@ -2457,6 +3148,82 @@ function mergeProfitDetailMaps(maps: Array<Record<string, number>>) {
   );
 }
 
+function ProfitTrendCell({
+  metric,
+  emphasize = false,
+  showMargin = false,
+  language,
+}: {
+  metric: ProfitTrendMetric;
+  emphasize?: boolean;
+  showMargin?: boolean;
+  language: Language;
+}) {
+  const prevDelta = metric.value != null && metric.previousValue != null ? metric.value - metric.previousValue : null;
+  const twoYearDelta = metric.value != null && metric.twoYearValue != null ? metric.value - metric.twoYearValue : null;
+  return (
+    <div>
+      <div className={`text-center text-[16px] font-semibold ${emphasize ? "text-stone-950" : valueTone(metric.value).replace("text-stone-400", "text-stone-900")}`}>
+        {formatProfitAmount(metric.value)}
+      </div>
+      <div className={`text-center text-[12px] font-semibold ${showMargin ? "mt-1" : ""}${valueTone(prevDelta)}`}>
+        {showMargin
+          ? (language === "en" ? "Margin " : "이익률 ") + formatDiscountRate(metric.margin)
+          : `${language === "en" ? "vs LY" : "전년비"} ${formatProfitDelta(prevDelta)}`}
+      </div>
+      <div className={`mt-1 text-center text-[9px] ${valueTone(showMargin ? prevDelta : twoYearDelta)}`}>
+        {showMargin
+          ? `${language === "en" ? "vs LY" : "전년비"} ${formatProfitDelta(prevDelta)}`
+          : `${language === "en" ? "vs 2YA" : "전전년비"} ${formatYoyRate(metric.yoyTwo)}`}
+      </div>
+    </div>
+  );
+}
+
+function ProfitDeltaCell({
+  metric,
+  emphasize = false,
+  showMargin = false,
+  language,
+}: {
+  metric: ProfitTrendMetric;
+  emphasize?: boolean;
+  showMargin?: boolean;
+  language: Language;
+}) {
+  const prevDelta = metric.value != null && metric.previousValue != null ? metric.value - metric.previousValue : null;
+  const twoYearDelta = metric.value != null && metric.twoYearValue != null ? metric.value - metric.twoYearValue : null;
+  const valueClass = metric.value != null && metric.value < 0
+    ? "text-red-600"
+    : emphasize
+      ? "text-stone-950"
+      : valueTone(metric.value).replace("text-stone-400", "text-stone-900");
+
+  return (
+    <div>
+      <div className={`text-center text-[16px] font-semibold ${valueClass}`}>
+        {formatProfitAmount(metric.value)}
+      </div>
+      <div className={`text-center text-[12px] font-semibold ${showMargin ? "mt-1" : ""}${valueTone(prevDelta)}`}>
+        {showMargin
+          ? (language === "en" ? "Margin " : "\uC774\uC775\uB960 ") + formatDiscountRate(metric.margin)
+          : `${language === "en" ? "vs LY" : "\uC804\uB144\uBE44"} ${formatProfitDelta(prevDelta)}`}
+      </div>
+      <div className={`mt-1 text-center text-[9px] ${valueTone(showMargin ? prevDelta : twoYearDelta)}`}>
+        {showMargin
+          ? `${language === "en" ? "vs LY" : "\uC804\uB144\uBE44"} ${formatProfitDelta(prevDelta)}`
+          : `${language === "en" ? "vs 2YA" : "\uC804\uC804\uB144\uBE44"} ${formatProfitDelta(twoYearDelta)}`}
+      </div>
+    </div>
+  );
+}
+
+function maxSeriesValue(values: Array<number | null>) {
+  const numericValues = values.filter((value): value is number => value != null && !Number.isNaN(value));
+  if (numericValues.length === 0) return null;
+  return Math.max(...numericValues);
+}
+
 function buildProfitMetricForStore(
   store: ProfitCardData[string][string],
   latestYear: number,
@@ -2476,7 +3243,7 @@ function buildProfitMetricForStore(
 
   const directOtherDetails: Record<string, number> = {};
   const operatingOtherDetails: Record<string, number> = {};
-  const isOffice = store.channel === "오피스";
+  const isOffice = store.channel === "\uC624\uD53C\uC2A4";
 
   for (const [accountName, periods] of Object.entries(accounts)) {
     if (!EXPENSE_ACCOUNT_SET.has(accountName)) continue;
@@ -2527,9 +3294,12 @@ function buildProfitMetricForStore(
   const previousDirectExpense = sumProfitValues(previousDirectPayroll, previousDirectRent, previousDirectOther) ?? 0;
   metric.previousDirectProfit = metric.previousGrossProfit != null ? metric.previousGrossProfit - previousDirectExpense : null;
 
-  metric.operatingProfit = metric.directProfit != null
-    ? metric.directProfit - operatingExpense
-    : sumProfitPeriods(accounts[OPERATING_PROFIT_ACCOUNT], latestYear, selectedMonth, mode);
+  const rawOperatingProfit = sumProfitPeriods(accounts[OPERATING_PROFIT_ACCOUNT], latestYear, selectedMonth, mode);
+  metric.operatingProfit = rawOperatingProfit ?? (
+    metric.directProfit != null
+      ? metric.directProfit - operatingExpense
+      : null
+  );
   metric.previousOperatingProfit = sumProfitPeriods(accounts[OPERATING_PROFIT_ACCOUNT], latestYear - 1, selectedMonth, mode);
 
   metric.grossMargin = calculateMarginValue(metric.grossProfit, metric.sales);
@@ -2600,6 +3370,13 @@ function aggregateProfitMetrics(metrics: ProfitBreakdownMetric[], vatFactor = 1)
 function formatProfitAmount(value: number | null | undefined) {
   if (value == null || Number.isNaN(value)) return "-";
   return formatSalesCell(value);
+}
+
+function formatProfitDelta(value: number | null | undefined) {
+  if (value == null || Number.isNaN(value)) return "-";
+  if (value > 0) return `+${formatSalesCell(value)}`;
+  if (value < 0) return `${String.fromCharCode(0x25B3)}${formatSalesCell(Math.abs(value))}`;
+  return formatSalesCell(0);
 }
 
 function getProfitText(
@@ -2888,13 +3665,31 @@ function formatCardBasis(selectedMonth: number, mode: CardMetricMode, latestYear
 function formatTimestamp(value: string, language: Language = "kr") {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(language === "en" ? "en-US" : "ko-KR", {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(date);
+    hour12: false,
+  });
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  ) as Record<string, string>;
+
+  const year = parts.year ?? "0000";
+  const month = parts.month ?? "00";
+  const day = parts.day ?? "00";
+  const hour = parts.hour ?? "00";
+  const minute = parts.minute ?? "00";
+
+  return language === "en"
+    ? `${year}-${month}-${day} ${hour}:${minute}`
+    : `${year}. ${month}. ${day}. ${hour}:${minute}`;
 }
 
 function valueTone(value: number | null | undefined) {

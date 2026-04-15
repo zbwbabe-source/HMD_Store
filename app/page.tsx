@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { DashboardShell } from "@/components/dashboard-shell";
-import { loadProfitCardData, loadStoreMonthlySales } from "@/lib/server-data";
+import { loadOperatingProfitSummary, loadProfitCardData, loadStoreMonthlySales } from "@/lib/server-data";
 
 const PERIOD_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -51,12 +51,14 @@ export default async function Home({
   const twExchangeRates = loadTwExchangeRates(viewSettings.twExchangeRates);
   const storeMonthlySales = await loadStoreMonthlySales(actualPeriod, twExchangeRates);
   const profitCardData = loadProfitCardData();
+  const operatingProfitSummary = loadOperatingProfitSummary();
 
   return (
     <DashboardShell
       data={data}
       storeMonthlySales={storeMonthlySales}
       profitCardData={profitCardData}
+      operatingProfitSummary={operatingProfitSummary}
       twExchangeRates={twExchangeRates}
       initialActualPeriod={actualPeriod}
       canEditPeriod

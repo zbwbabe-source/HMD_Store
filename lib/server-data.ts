@@ -8,32 +8,33 @@ const REGIONS = {
   TW: new Set(["TW"]),
 } as const;
 
-const ACTUAL_SALES_ACCOUNT_NAME = "실매출액";
-const TAG_SALES_ACCOUNT_NAME = "Tag매출액";
+const ACTUAL_SALES_ACCOUNT_NAME = "\uC2E4\uB9E4\uCD9C\uC561";
+const TAG_SALES_ACCOUNT_NAME = "Tag\uB9E4\uCD9C\uC561";
+const OPERATING_PROFIT_ACCOUNT_NAME = "\uC601\uC5C5\uC774\uC775";
 
 const PROFIT_ACCOUNT_NAMES = new Set([
-  "Tag매출액",
-  "할인율",
-  "실매출액",
-  "매출원가합계",
-  "매출총이익",
-  "영업이익",
-  "판매관리비",
-  "1. 급 여",
+  "Tag\uB9E4\uCD9C\uC561",
+  "\uD560\uC778\uC728",
+  "\uC2E4\uB9E4\uCD9C\uC561",
+  "\uB9E4\uCD9C\uC6D0\uAC00\uD569\uACC4",
+  "\uB9E4\uCD9C\uCD1D\uC774\uC775",
+  "\uC601\uC5C5\uC774\uC775",
+  "\uD310\uB9E4\uAD00\uB9AC\uBE44",
+  "1. \uAE09 \uC5EC",
   "2. TRAVEL & MEAL",
-  "3. 피복비(유니폼)",
-  "4. 임차료",
-  "5. 유지보수비",
-  "6. 수도광열비",
-  "7. 소모품비",
-  "8. 통신비",
-  "9. 광고선전비",
-  "10. 지급수수료",
-  "11. 운반비",
-  "12. 기타 수수료(매장관리비 외)",
-  "13. 보험료",
-  "14. 감가상각비",
-  "15. 면세점 직접비",
+  "3. \uD53C\uBCF5\uBE44(\uC720\uB2C8\uD3FC)",
+  "4. \uC784\uCC28\uB8CC",
+  "5. \uC720\uC9C0\uBCF4\uC218\uBE44",
+  "6. \uC218\uB3C4\uAD11\uC5F4\uBE44",
+  "7. \uC18C\uBAA8\uD488\uBE44",
+  "8. \uD1B5\uC2E0\uBE44",
+  "9. \uAD11\uACE0\uC120\uC804\uBE44",
+  "10. \uC9C0\uAE09\uC218\uC218\uB8CC",
+  "11. \uC6B4\uBC18\uBE44",
+  "12. \uAE30\uD0C0 \uC218\uC218\uB8CC(\uB9E4\uC7A5\uAD00\uB9AC\uBE44 \uC678)",
+  "13. \uBCF4\uD5D8\uB8CC",
+  "14. \uAC10\uAC00\uC0C1\uAC01\uBE44",
+  "15. \uBA74\uC138\uC810 \uC9C1\uC811\uBE44",
 ]);
 
 type StoreMonthlySales = Record<
@@ -67,6 +68,17 @@ type ProfitCardData = Record<
   >
 >;
 
+type OperatingProfitSummary = Record<
+  string,
+  Record<
+    string,
+    {
+      monthlyOperatingProfit: Record<string, number>;
+      monthlySales: Record<string, number>;
+    }
+  >
+>;
+
 type CsvRow = {
   brand: string;
   country: string;
@@ -90,6 +102,7 @@ type BaselineStore = {
 };
 
 let cachedProfitCardData: ProfitCardData | null = null;
+let cachedOperatingProfitSummary: OperatingProfitSummary | null = null;
 const storeMonthlySalesCache = new Map<string, Promise<StoreMonthlySales>>();
 
 function parseCsvLine(line: string) {
@@ -436,8 +449,6 @@ export function loadProfitCardData() {
   const payload: ProfitCardData = { HKMC: {}, TW: {} };
 
   for (const row of readNormalizedMonthlyPnlRows()) {
-    if (!PROFIT_ACCOUNT_NAMES.has(row.account_name_clean)) continue;
-
     const region = resolveRegion(row.country);
     if (!region) continue;
 
@@ -459,4 +470,42 @@ export function loadProfitCardData() {
 
   cachedProfitCardData = payload;
   return cachedProfitCardData;
+}
+
+export function loadOperatingProfitSummary() {
+  if (cachedOperatingProfitSummary) return cachedOperatingProfitSummary;
+
+  const payload: OperatingProfitSummary = {
+    HKMC: {},
+    TW: {},
+  };
+
+  for (const row of readNormalizedMonthlyPnlRows()) {
+    const region = resolveRegion(row.country);
+    if (!region) continue;
+    if (!row.period_key) continue;
+
+    const amount = Number(row.amount);
+    if (Number.isNaN(amount)) continue;
+
+    const brandKey = row.brand || "ALL";
+    const targetBrands = ["ALL", brandKey];
+    for (const key of targetBrands) {
+      const bucket = (payload[region][key] ??= {
+        monthlyOperatingProfit: {},
+        monthlySales: {},
+      });
+
+      if (row.account_name_clean === OPERATING_PROFIT_ACCOUNT_NAME) {
+        bucket.monthlyOperatingProfit[row.period_key] = roundTo((bucket.monthlyOperatingProfit[row.period_key] ?? 0) + amount, 4);
+      }
+
+      if (row.account_name_clean === ACTUAL_SALES_ACCOUNT_NAME) {
+        bucket.monthlySales[row.period_key] = roundTo((bucket.monthlySales[row.period_key] ?? 0) + amount, 4);
+      }
+    }
+  }
+
+  cachedOperatingProfitSummary = payload;
+  return cachedOperatingProfitSummary;
 }
