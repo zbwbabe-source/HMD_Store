@@ -772,35 +772,38 @@ export function DashboardShell({
       grouped.set(groupLabel, rows);
     }
 
-    return Array.from(grouped.entries()).map(([channel, rows]) => {
-      const metrics = rows.map((row) => {
-        const metric = getCardMetric(row);
-        const displayMetric = getDisplayMetric(metric, tableBasisMode);
-        return { row, metric, displayMetric };
-      });
-      const channelMetric = aggregateMetricCells(metrics.map((entry) => entry.metric));
-      const displayChannelMetric = getDisplayMetric(channelMetric, tableBasisMode);
-      const topYoy = metrics.reduce<{ storeName: string; value: number; yoyTwo: number | null } | null>((best, entry) => {
-        const value = entry.displayMetric.yoyPrev;
-        if (value == null) return best;
-        if (!best || value > best.value) {
-          return { storeName: entry.row.storeName, value, yoyTwo: entry.displayMetric.yoyTwo };
-        }
-        return best;
-      }, null);
+    return Array.from(grouped.entries())
+      .filter(([channel]) => !channel.includes("오피스"))
+      .map(([channel, rows]) => {
+        const metrics = rows.map((row) => {
+          const metric = getCardMetric(row);
+          const displayMetric = getDisplayMetric(metric, tableBasisMode);
+          return { row, metric, displayMetric };
+        });
+        const channelMetric = aggregateMetricCells(metrics.map((entry) => entry.metric));
+        const displayChannelMetric = getDisplayMetric(channelMetric, tableBasisMode);
+        const topYoy = metrics.reduce<{ storeName: string; value: number; yoyTwo: number | null } | null>((best, entry) => {
+          const value = entry.displayMetric.yoyPrev;
+          if (value == null) return best;
+          if (!best || value > best.value) {
+            return { storeName: entry.row.storeName, value, yoyTwo: entry.displayMetric.yoyTwo };
+          }
+          return best;
+        }, null);
 
-      const topSales = metrics.reduce<{ storeName: string; value: number; yoyPrev: number | null; yoyTwo: number | null } | null>((best, entry) => {
-        const value = entry.displayMetric.sales;
-        if (value == null) return best;
-        if (!best || value > best.value) {
-          return { storeName: entry.row.storeName, value, yoyPrev: entry.displayMetric.yoyPrev, yoyTwo: entry.displayMetric.yoyTwo };
-        }
-        return best;
-      }, null);
+        const topSales = metrics.reduce<{ storeName: string; value: number; yoyPrev: number | null; yoyTwo: number | null } | null>((best, entry) => {
+          const value = entry.displayMetric.sales;
+          if (value == null) return best;
+          if (!best || value > best.value) {
+            return { storeName: entry.row.storeName, value, yoyPrev: entry.displayMetric.yoyPrev, yoyTwo: entry.displayMetric.yoyTwo };
+          }
+          return best;
+        }, null);
 
-      const discountSummary = getDiscountSummary(channelMetric, discountVatFactor);
-      return { channel, channelMetric, displayChannelMetric, topYoy, topSales, discountSummary };
-    }).sort((a, b) => getChannelCardOrder(a.channel) - getChannelCardOrder(b.channel) || a.channel.localeCompare(b.channel));
+        const discountSummary = getDiscountSummary(channelMetric, discountVatFactor);
+        return { channel, channelMetric, displayChannelMetric, topYoy, topSales, discountSummary };
+      })
+      .sort((a, b) => getChannelCardOrder(a.channel) - getChannelCardOrder(b.channel) || a.channel.localeCompare(b.channel));
   }, [discountVatFactor, getCardMetric, storeOnlyRows, tableBasisMode]);
 
   const filteredProfitStores = useMemo(
@@ -951,15 +954,19 @@ export function DashboardShell({
           filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear - 1, month, "month", discountVatFactor)),
           discountVatFactor,
         );
+        const twoYears = aggregateProfitMetrics(
+          filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear - 2, month, "month", discountVatFactor)),
+          discountVatFactor,
+        );
         return {
           month,
           ...createProfitTrendMetric(
             getOperatingExpenseValue(current),
-            negateNullable(sumProfitValues(current.operatingPayroll, current.operatingRent, current.advertising, current.operatingOther)),
             previous ? getOperatingExpenseValue(previous) : null,
+            twoYears ? getOperatingExpenseValue(twoYears) : null,
             current.sales,
             current.previousSales,
-            previous.sales,
+            twoYears.sales,
           ),
         };
       }),
@@ -969,13 +976,17 @@ export function DashboardShell({
           filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear - 1, selectedMonth, "ytd", discountVatFactor)),
           discountVatFactor,
         );
+        const twoYears = aggregateProfitMetrics(
+          filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear - 2, selectedMonth, "ytd", discountVatFactor)),
+          discountVatFactor,
+        );
         return createProfitTrendMetric(
           getOperatingExpenseValue(current),
-          negateNullable(sumProfitValues(current.operatingPayroll, current.operatingRent, current.advertising, current.operatingOther)),
           previous ? getOperatingExpenseValue(previous) : null,
+          twoYears ? getOperatingExpenseValue(twoYears) : null,
           current.sales,
           current.previousSales,
-          previous.sales,
+          twoYears.sales,
         );
       })(),
       annual: (() => {
@@ -984,13 +995,17 @@ export function DashboardShell({
           filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear - 1, 12, "annual", discountVatFactor)),
           discountVatFactor,
         );
+        const twoYears = aggregateProfitMetrics(
+          filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear - 2, 12, "annual", discountVatFactor)),
+          discountVatFactor,
+        );
         return createProfitTrendMetric(
           getOperatingExpenseValue(current),
-          negateNullable(sumProfitValues(current.operatingPayroll, current.operatingRent, current.advertising, current.operatingOther)),
           previous ? getOperatingExpenseValue(previous) : null,
+          twoYears ? getOperatingExpenseValue(twoYears) : null,
           current.sales,
           current.previousSales,
-          previous.sales,
+          twoYears.sales,
         );
       })(),
     };
@@ -1663,14 +1678,19 @@ export function DashboardShell({
                                   <span>{formatStoreName(row.storeName, language)}</span>
                                 </button>
                               ) : (
-                                <>
-                                  {formatStoreName(row.storeName, language)}
-                                  {!isSummaryRow ? (
-                                    <span className="ml-2 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+                                <div className="flex flex-col items-start">
+                                  <span>{formatStoreName(row.storeName, language)}</span>
+                                  <div className="mt-1 flex flex-wrap gap-1">
+                                    <span className="inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
                                       {language === "en" ? "Direct Profit" : "직접이익"}
                                     </span>
-                                  ) : null}
-                                </>
+                                    {!isSummaryRow ? (
+                                      <span className="inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+                                        {language === "en" ? "Store" : "매장"}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </div>
                               )}
                             </td>
                             {row.months.map((month) => (
@@ -3202,22 +3222,40 @@ function ProfitDeltaCell({
     : emphasize
       ? "text-stone-950"
       : valueTone(metric.value).replace("text-stone-400", "text-stone-900");
+  const secondaryLabel = showMargin
+    ? (language === "en" ? "Margin" : "이익률")
+    : (language === "en" ? "vs LY" : "전년비");
+  const secondaryValue = showMargin
+    ? formatDiscountRate(metric.margin)
+    : formatProfitDelta(prevDelta);
+  const tertiaryLabel = showMargin
+    ? (language === "en" ? "vs LY" : "전년비")
+    : (language === "en" ? "vs 2YA" : "전전년비");
+  const tertiaryValue = showMargin
+    ? formatProfitDelta(prevDelta)
+    : formatProfitDelta(twoYearDelta);
+  const quaternaryLabel = language === "en" ? "vs 2YA" : "전전년비";
+  const quaternaryValue = formatProfitDelta(twoYearDelta);
 
   return (
-    <div>
+    <div className={showMargin ? "min-h-[96px]" : undefined}>
       <div className={`text-center text-[16px] font-semibold ${valueClass}`}>
         {formatProfitAmount(metric.value)}
       </div>
-      <div className={`text-center text-[12px] font-semibold ${showMargin ? "mt-1" : ""}${valueTone(prevDelta)}`}>
-        {showMargin
-          ? (language === "en" ? "Margin " : "\uC774\uC775\uB960 ") + formatDiscountRate(metric.margin)
-          : `${language === "en" ? "vs LY" : "\uC804\uB144\uBE44"} ${formatProfitDelta(prevDelta)}`}
+      <div className={`mt-1 text-center text-[12px] font-semibold ${valueTone(prevDelta)}`}>
+        <span className="block leading-tight">{secondaryLabel}</span>
+        <span className="mt-0.5 block leading-tight">{secondaryValue}</span>
       </div>
       <div className={`mt-1 text-center text-[9px] ${valueTone(showMargin ? prevDelta : twoYearDelta)}`}>
-        {showMargin
-          ? `${language === "en" ? "vs LY" : "\uC804\uB144\uBE44"} ${formatProfitDelta(prevDelta)}`
-          : `${language === "en" ? "vs 2YA" : "\uC804\uC804\uB144\uBE44"} ${formatProfitDelta(twoYearDelta)}`}
+        <span className="block leading-tight">{tertiaryLabel}</span>
+        <span className="mt-0.5 block leading-tight">{tertiaryValue}</span>
       </div>
+      {showMargin ? (
+        <div className={`mt-1 text-center text-[9px] ${valueTone(twoYearDelta)}`}>
+          <span className="block leading-tight">{quaternaryLabel}</span>
+          <span className="mt-0.5 block leading-tight">{quaternaryValue}</span>
+        </div>
+      ) : null}
     </div>
   );
 }
