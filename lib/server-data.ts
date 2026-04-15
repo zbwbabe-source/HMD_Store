@@ -101,10 +101,6 @@ type BaselineStore = {
   annualTagTotals: Record<string, number>;
 };
 
-let cachedProfitCardData: ProfitCardData | null = null;
-let cachedOperatingProfitSummary: OperatingProfitSummary | null = null;
-const storeMonthlySalesCache = new Map<string, Promise<StoreMonthlySales>>();
-
 function parseCsvLine(line: string) {
   const cells: string[] = [];
   let current = "";
@@ -335,12 +331,7 @@ function loadExcelBaseline(exchangeRates: Record<string, number>, referenceYear:
     const rawAmount = Number(row.amount);
     if (!storeCode || !row.period_key || Number.isNaN(rawAmount)) continue;
 
-    const periodYear = Number(row.period_key.slice(0, 4));
-    const periodMonth = Number(row.period_key.slice(5, 7));
-    const useRawAmount = country === "TW" && periodYear === referenceYear && periodMonth > actualMonth;
-    const convertedAmount = useRawAmount
-      ? rawAmount
-      : convertAmount(rawAmount, country, row.period_key, exchangeRates, referenceYear);
+    const convertedAmount = rawAmount;
 
     const store = (payload[region][storeCode] ??= {
       brand: row.brand,
@@ -379,6 +370,14 @@ function mergeSources(
 ) {
   for (const regionPayload of Object.values(payload)) {
     for (const [storeCode, store] of Object.entries(regionPayload)) {
+      if (store.country === "TW") {
+        store.monthlySales = sortPeriodMap({ ...store.monthlySales });
+        store.monthlyTagSales = sortPeriodMap({ ...store.monthlyTagSales });
+        store.annualTotals = buildAnnualTotals(store.monthlySales);
+        store.annualTagTotals = buildAnnualTotals(store.monthlyTagSales);
+        continue;
+      }
+
       const monthlySales = { ...store.monthlySales };
       const monthlyTagSales = { ...store.monthlyTagSales };
       const sqlMonths = sqlActuals[storeCode] ?? {};
@@ -419,33 +418,22 @@ function loadSnapshotStoreMonthlySales() {
 }
 
 export async function loadStoreMonthlySales(actualPeriod: string, exchangeRates: Record<string, number>) {
-  const cacheKey = JSON.stringify([actualPeriod, exchangeRates]);
-  const cached = storeMonthlySalesCache.get(cacheKey);
-  if (cached) return cached;
+  const { year: actualYear, month: actualMonth } = parseActualPeriod(actualPeriod);
+  const baseline = loadExcelBaseline(exchangeRates, actualYear, actualMonth);
+  const storeCodes = Object.values(baseline).flatMap((stores) => Object.keys(stores)).sort();
 
-  const promise = (async () => {
-    const { year: actualYear, month: actualMonth } = parseActualPeriod(actualPeriod);
-    const baseline = loadExcelBaseline(exchangeRates, actualYear, actualMonth);
-    const storeCodes = Object.values(baseline).flatMap((stores) => Object.keys(stores)).sort();
-
-    try {
-      const sqlActuals = await fetchSqlActuals(storeCodes, actualYear, actualMonth);
-      return mergeSources(baseline, sqlActuals, actualYear, actualMonth, exchangeRates);
-    } catch (error) {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("Falling back to snapshot store monthly sales:", error);
-      }
-      return loadSnapshotStoreMonthlySales();
+  try {
+    const sqlActuals = await fetchSqlActuals(storeCodes, actualYear, actualMonth);
+    return mergeSources(baseline, sqlActuals, actualYear, actualMonth, exchangeRates);
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("Falling back to snapshot store monthly sales:", error);
     }
-  })();
-
-  storeMonthlySalesCache.set(cacheKey, promise);
-  return promise;
+    return baseline;
+  }
 }
 
 export function loadProfitCardData() {
-  if (cachedProfitCardData) return cachedProfitCardData;
-
   const payload: ProfitCardData = { HKMC: {}, TW: {} };
 
   for (const row of readNormalizedMonthlyPnlRows()) {
@@ -467,14 +455,10 @@ export function loadProfitCardData() {
     const periods = (store.accounts[row.account_name_clean] ??= {});
     periods[row.period_key] = roundTo((periods[row.period_key] ?? 0) + amount, 4);
   }
-
-  cachedProfitCardData = payload;
-  return cachedProfitCardData;
+  return payload;
 }
 
 export function loadOperatingProfitSummary() {
-  if (cachedOperatingProfitSummary) return cachedOperatingProfitSummary;
-
   const payload: OperatingProfitSummary = {
     HKMC: {},
     TW: {},
@@ -505,7 +489,5 @@ export function loadOperatingProfitSummary() {
       }
     }
   }
-
-  cachedOperatingProfitSummary = payload;
-  return cachedOperatingProfitSummary;
+  return payload;
 }

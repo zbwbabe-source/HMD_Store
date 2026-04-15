@@ -4,6 +4,9 @@ import { join } from "node:path";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { loadOperatingProfitSummary, loadProfitCardData, loadStoreMonthlySales } from "@/lib/server-data";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const PERIOD_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 function loadViewSettings() {

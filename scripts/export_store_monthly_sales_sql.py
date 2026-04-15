@@ -150,16 +150,7 @@ def load_excel_baseline(exchange_rates: dict[str, float], reference_year: int, a
         )
         period_key = str(row["period_key"])
         raw_amount = float(row["amount"] or 0.0)
-        period_year = int(period_key[:4])
-        period_month = int(period_key[5:7])
-        use_raw_amount = country == "TW" and period_year == reference_year and period_month > actual_month
-        converted_amount = raw_amount if use_raw_amount else convert_amount(
-            raw_amount,
-            country,
-            period_key,
-            exchange_rates,
-            reference_year=reference_year,
-        )
+        converted_amount = raw_amount
         target_key = "monthlySales" if row["account_name_clean"] == ACTUAL_SALES_ACCOUNT_NAME else "monthlyTagSales"
         store[target_key][period_key] = round(converted_amount, 2)
 
@@ -219,6 +210,13 @@ def merge_sources(
     for region_payload in payload.values():
         for store_code, store in region_payload.items():
             country = str(store["country"])
+            if country == "TW":
+                store["monthlySales"] = dict(sorted(dict(store.get("monthlySales", {})).items()))
+                store["annualTotals"] = build_annual_totals(store["monthlySales"])
+                store["monthlyTagSales"] = dict(sorted(dict(store.get("monthlyTagSales", {})).items()))
+                store["annualTagTotals"] = build_annual_totals(store["monthlyTagSales"])
+                continue
+
             monthly_sales: dict[str, float] = dict(store.get("monthlySales", {}))
             monthly_tag_sales: dict[str, float] = dict(store.get("monthlyTagSales", {}))
             sql_months = sql_actuals.get(store_code, {})
@@ -252,8 +250,11 @@ def main() -> None:
     exchange_rates = load_tw_exchange_rates(settings)
     payload = load_excel_baseline(exchange_rates, reference_year=actual_year, actual_month=actual_month)
     store_dimensions = flatten_store_dimensions(payload)
-    sql_actuals = fetch_sql_actuals(store_dimensions, actual_year, actual_month)
-    merged = merge_sources(payload, sql_actuals, actual_year, actual_month, exchange_rates, reference_year=actual_year)
+    try:
+        sql_actuals = fetch_sql_actuals(store_dimensions, actual_year, actual_month)
+        merged = merge_sources(payload, sql_actuals, actual_year, actual_month, exchange_rates, reference_year=actual_year)
+    except Exception:
+        merged = payload
     print(json.dumps(merged, ensure_ascii=False))
 
 

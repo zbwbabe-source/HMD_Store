@@ -603,17 +603,15 @@ export function DashboardShell({
   }, [latestYear, region?.monthly, selectedMonth]);
 
   const tableRows = useMemo<TableRow[]>(() => {
-    return storeRows
-      .map((store) => {
-        const salesSource = regionSales[store.storeCode];
-        if (!salesSource) return null;
+    return Object.entries(regionSales)
+      .map(([storeCode, salesSource]) => {
         if (selectedBrand !== "ALL" && salesSource.brand !== selectedBrand) return null;
 
         const months = MONTH_OPTIONS.map((month) => ({
           month,
           ...createMetricCell(salesSource.monthlySales, salesSource.monthlyTagSales, latestYear, month),
         }));
-        const rowCountry = getStoreCountry(regionKey, store.storeCode, countryLabel);
+        const rowCountry = getStoreCountry(regionKey, storeCode, countryLabel);
         const toggleKey = `${rowCountry}__${salesSource.brand}__${salesSource.channel}`;
 
         return {
@@ -621,8 +619,8 @@ export function DashboardShell({
           country: rowCountry,
           brand: salesSource.brand,
           channel: salesSource.channel,
-          storeName: store.storeName,
-          rowKey: store.storeCode,
+          storeName: salesSource.storeName,
+          rowKey: storeCode,
           toggleKey,
           months,
           ytd: createYtdMetric(salesSource.monthlySales, salesSource.monthlyTagSales, latestYear, selectedMonth),
@@ -635,7 +633,7 @@ export function DashboardShell({
         if (a.channel !== b.channel) return a.channel.localeCompare(b.channel);
         return a.storeName.localeCompare(b.storeName);
       });
-  }, [countryLabel, latestYear, regionKey, regionSales, selectedBrand, selectedMonth, storeRows]);
+  }, [countryLabel, latestYear, regionKey, regionSales, selectedBrand, selectedMonth]);
 
   const channelKeys = useMemo(() => Array.from(new Set(tableRows.map((row) => row.toggleKey).filter((value): value is string => Boolean(value)))), [tableRows]);
 
@@ -1487,13 +1485,19 @@ export function DashboardShell({
               <div className="flex flex-wrap gap-2">
                 <ToggleButton
                   active={trendTableMode === "sales"}
-                  onClick={() => setTrendTableMode("sales")}
+                  onClick={() => {
+                    setTrendTableMode("sales");
+                    setViewMode("sales");
+                  }}
                 >
                   {language === "en" ? "Sales Trend" : "매출액 보기"}
                 </ToggleButton>
                 <ToggleButton
                   active={trendTableMode === "profit"}
-                  onClick={() => setTrendTableMode("profit")}
+                  onClick={() => {
+                    setTrendTableMode("profit");
+                    setViewMode("sales");
+                  }}
                 >
                   {language === "en" ? "Profit Trend" : "손익추세"}
                 </ToggleButton>
