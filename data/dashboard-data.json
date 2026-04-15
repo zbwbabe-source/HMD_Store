@@ -1,6 +1,6 @@
 {
   "title": "HKMC/TW 스토어 대시보드",
-  "generatedAt": "2026-04-07T15:42:54",
+  "generatedAt": "2026-04-15T17:01:04",
   "metricMeta": {
     "actualSales": {
       "label": "실매출",
@@ -35,22 +35,22 @@
         2025,
         2026
       ],
-      "summary": "홍콩/마카오 최근 실적은 2026-12 기준으로, 전년 대비 성장세 유지입니다. 현재 할인율은 16.5% 수준으로 할인 통제가 안정적이며, 직접이익률은 13.9%로 수익성 관리가 필요한 상태입니다. 향후 3개월 매출 전망 합계는 109.3K입니다.",
+      "summary": "홍콩/마카오 최근 실적은 2026-12 기준으로, 전년 대비 성장세 유지입니다. 현재 할인율은 16.7% 수준으로 할인 통제가 안정적이며, 직접이익률은 13.8%로 수익성 관리가 필요한 상태입니다. 향후 3개월 매출 전망 합계는 104.3K입니다.",
       "kpis": [
         {
           "key": "actualSales",
           "label": "실매출",
-          "value": 38250.0,
-          "display": "38.2K",
-          "delta": 0.4598,
+          "value": 36950.0,
+          "display": "37.0K",
+          "delta": 0.4102,
           "deltaLabel": "YoY",
-          "insight": "당월 실매출은 38.2K이며 전년 동월 대비 46.0%입니다."
+          "insight": "당월 실매출은 37.0K이며 전년 동월 대비 41.0%입니다."
         },
         {
           "key": "yoyGrowth",
           "label": "YoY 성장률",
-          "value": 0.4598,
-          "display": "46.0%",
+          "value": 0.4102,
+          "display": "41.0%",
           "delta": null,
           "deltaLabel": "2026-12",
           "insight": "2026-12 기준 전년 동월 성장률입니다. 매출 추세의 방향성과 속도를 빠르게 확인할 수 있습니다."
@@ -58,29 +58,29 @@
         {
           "key": "discountRate",
           "label": "할인율",
-          "value": 0.1648,
-          "display": "16.5%",
+          "value": 0.1666,
+          "display": "16.7%",
           "delta": null,
           "deltaLabel": "Tag 대비",
-          "insight": "Tag 매출 대비 실매출 차이를 반영한 할인율입니다. 현재 수준은 16.5%입니다."
+          "insight": "Tag 매출 대비 실매출 차이를 반영한 할인율입니다. 현재 수준은 16.7%입니다."
         },
         {
           "key": "directProfit",
           "label": "직접이익",
-          "value": 5298.33,
-          "display": "5.3K",
-          "delta": 0.1385,
+          "value": 5103.06,
+          "display": "5.1K",
+          "delta": 0.1381,
           "deltaLabel": "Margin",
-          "insight": "매출총이익에서 직접비를 차감한 값으로, 매장 운영의 실질 수익성을 보여줍니다. 현재 이익률은 13.9%입니다."
+          "insight": "매출총이익에서 직접비를 차감한 값으로, 매장 운영의 실질 수익성을 보여줍니다. 현재 이익률은 13.8%입니다."
         },
         {
           "key": "forecastSales",
           "label": "3개월 매출 전망",
-          "value": 109279.43000000001,
-          "display": "109.3K",
+          "value": 104265.14000000001,
+          "display": "104.3K",
           "delta": null,
           "deltaLabel": "Forward 3M",
-          "insight": "최근 6개월 매출 흐름을 기준으로 단순 추세 예측을 적용했습니다. 향후 3개월 합계는 109.3K입니다."
+          "insight": "최근 6개월 매출 흐름을 기준으로 단순 추세 예측을 적용했습니다. 향후 3개월 합계는 104.3K입니다."
         }
       ],
       "monthly": [
@@ -988,73 +988,73 @@
           "period": "2026-03",
           "year": 2026,
           "month": 3,
-          "actualSales": 21293.96,
-          "tagSales": 26294.98,
-          "discountRate": 0.1902,
+          "actualSales": 20125.48,
+          "tagSales": 23709.22,
+          "discountRate": 0.1512,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": -557.03,
-          "directProfit": -557.03,
-          "directMargin": -0.0262,
-          "rent": 12111.01,
-          "payroll": 6677.33,
-          "sga": 13565.28,
-          "yoyGrowth": 0.2532,
-          "yoyDirectProfit": -0.8494
+          "operatingProfit": -1333.21,
+          "directProfit": -1333.21,
+          "directMargin": -0.0662,
+          "rent": 12203.47,
+          "payroll": 6282.31,
+          "sga": 13898.13,
+          "yoyGrowth": 0.1845,
+          "yoyDirectProfit": -0.6397
         },
         {
           "period": "2026-04",
           "year": 2026,
           "month": 4,
-          "actualSales": 20920.0,
-          "tagSales": 25510.35,
-          "discountRate": 0.1799,
+          "actualSales": 18920.0,
+          "tagSales": 23282.32,
+          "discountRate": 0.1874,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": -2456.17,
-          "directProfit": -2456.17,
-          "directMargin": -0.1174,
+          "operatingProfit": -3761.02,
+          "directProfit": -3761.02,
+          "directMargin": -0.1988,
           "rent": 12234.57,
           "payroll": 8091.91,
           "sga": 15342.83,
-          "yoyGrowth": 0.1931,
-          "yoyDirectProfit": 0.4244
+          "yoyGrowth": 0.0791,
+          "yoyDirectProfit": 1.1811
         },
         {
           "period": "2026-05",
           "year": 2026,
           "month": 5,
-          "actualSales": 23320.0,
-          "tagSales": 28540.72,
-          "discountRate": 0.1829,
+          "actualSales": 20570.0,
+          "tagSales": 25469.65,
+          "discountRate": 0.1924,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 284.63,
-          "directProfit": 284.63,
-          "directMargin": 0.0122,
-          "rent": 12410.12,
+          "operatingProfit": -1084.9,
+          "directProfit": -1084.9,
+          "directMargin": -0.0527,
+          "rent": 11565.52,
           "payroll": 6639.33,
-          "sga": 14049.73,
-          "yoyGrowth": 0.3147,
-          "yoyDirectProfit": -1.2623
+          "sga": 13627.43,
+          "yoyGrowth": 0.1597,
+          "yoyDirectProfit": -0.0001
         },
         {
           "period": "2026-06",
           "year": 2026,
           "month": 6,
-          "actualSales": 20800.0,
-          "tagSales": 25393.72,
-          "discountRate": 0.1809,
+          "actualSales": 19850.0,
+          "tagSales": 24349.42,
+          "discountRate": 0.1848,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": -1213.62,
-          "directProfit": -1213.62,
-          "directMargin": -0.0583,
+          "operatingProfit": -1837.8,
+          "directProfit": -1837.8,
+          "directMargin": -0.0926,
           "rent": 12358.75,
           "payroll": 6662.63,
           "sga": 14014.78,
-          "yoyGrowth": 0.3537,
-          "yoyDirectProfit": -0.55
+          "yoyGrowth": 0.2918,
+          "yoyDirectProfit": -0.3186
         },
         {
           "period": "2026-07",
@@ -1114,55 +1114,55 @@
           "period": "2026-10",
           "year": 2026,
           "month": 10,
-          "actualSales": 24330.0,
-          "tagSales": 29560.36,
-          "discountRate": 0.1769,
+          "actualSales": 23730.0,
+          "tagSales": 28878.13,
+          "discountRate": 0.1783,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 1531.11,
-          "directProfit": 1531.11,
-          "directMargin": 0.0629,
-          "rent": 11006.39,
-          "payroll": 6796.83,
-          "sga": 13493.12,
-          "yoyGrowth": 0.1877,
-          "yoyDirectProfit": -1.662
+          "operatingProfit": 1731.44,
+          "directProfit": 1731.44,
+          "directMargin": 0.073,
+          "rent": 10376.92,
+          "payroll": 6613.92,
+          "sga": 12905.65,
+          "yoyGrowth": 0.1584,
+          "yoyDirectProfit": -1.7486
         },
         {
           "period": "2026-11",
           "year": 2026,
           "month": 11,
-          "actualSales": 26350.0,
-          "tagSales": 32088.45,
-          "discountRate": 0.1788,
+          "actualSales": 25550.0,
+          "tagSales": 31172.11,
+          "discountRate": 0.1804,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 2056.7,
-          "directProfit": 2056.7,
-          "directMargin": 0.0781,
-          "rent": 11476.73,
-          "payroll": 6796.83,
-          "sga": 14199.97,
-          "yoyGrowth": 0.1685,
-          "yoyDirectProfit": 48.4399
+          "operatingProfit": 2090.22,
+          "directProfit": 2090.22,
+          "directMargin": 0.0818,
+          "rent": 10847.26,
+          "payroll": 6613.92,
+          "sga": 13652.34,
+          "yoyGrowth": 0.133,
+          "yoyDirectProfit": 49.2457
         },
         {
           "period": "2026-12",
           "year": 2026,
           "month": 12,
-          "actualSales": 38250.0,
-          "tagSales": 45798.46,
-          "discountRate": 0.1648,
+          "actualSales": 36950.0,
+          "tagSales": 44337.07,
+          "discountRate": 0.1666,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 5298.33,
-          "directProfit": 5298.33,
-          "directMargin": 0.1385,
-          "rent": 13196.16,
-          "payroll": 11745.82,
-          "sga": 18424.02,
-          "yoyGrowth": 0.4598,
-          "yoyDirectProfit": -9.2762
+          "operatingProfit": 5103.06,
+          "directProfit": 5103.06,
+          "directMargin": 0.1381,
+          "rent": 12566.69,
+          "payroll": 11428.3,
+          "sga": 17775.24,
+          "yoyGrowth": 0.4102,
+          "yoyDirectProfit": -8.9712
         }
       ],
       "yearlyMetrics": {
@@ -1206,16 +1206,16 @@
             "values": [
               29325.4,
               37092.31,
-              21293.96,
-              20920.0,
-              23320.0,
-              20800.0,
+              20125.48,
+              18920.0,
+              20570.0,
+              19850.0,
               23530.0,
               25980.0,
               16260.0,
-              24330.0,
-              26350.0,
-              38250.0
+              23730.0,
+              25550.0,
+              36950.0
             ]
           }
         ],
@@ -1259,16 +1259,16 @@
             "values": [
               0.2001,
               0.1883,
-              0.1902,
-              0.1799,
-              0.1829,
-              0.1809,
+              0.1512,
+              0.1874,
+              0.1924,
+              0.1848,
               0.2079,
               0.2132,
               0.1915,
-              0.1769,
-              0.1788,
-              0.1648
+              0.1783,
+              0.1804,
+              0.1666
             ]
           }
         ],
@@ -1312,16 +1312,16 @@
             "values": [
               2992.01,
               7518.91,
-              -557.03,
-              -2456.17,
-              284.63,
-              -1213.62,
+              -1333.21,
+              -3761.02,
+              -1084.9,
+              -1837.8,
               -11.01,
               1462.87,
               -3224.26,
-              1531.11,
-              2056.7,
-              5298.33
+              1731.44,
+              2090.22,
+              5103.06
             ]
           }
         ]
@@ -1330,23 +1330,23 @@
         {
           "period": "2027-01",
           "label": "1월",
-          "actualSales": 34061.33,
-          "directProfit": 4493.98,
-          "discountRate": 0.1888
+          "actualSales": 32661.33,
+          "directProfit": 4432.86,
+          "discountRate": 0.1896
         },
         {
           "period": "2027-02",
           "label": "2월",
-          "actualSales": 36426.48,
-          "directProfit": 5439.22,
-          "discountRate": 0.1888
+          "actualSales": 34755.05,
+          "directProfit": 5358.81,
+          "discountRate": 0.1896
         },
         {
           "period": "2027-03",
           "label": "3월",
-          "actualSales": 38791.62,
-          "directProfit": 6384.47,
-          "discountRate": 0.1888
+          "actualSales": 36848.76,
+          "directProfit": 6284.75,
+          "discountRate": 0.1896
         }
       ],
       "storeYoyByYear": {
@@ -2876,7 +2876,7 @@
             "months": [
               -0.1265,
               1.2715,
-              -0.9602,
+              -0.9624,
               0.7194,
               0.7421,
               0.767,
@@ -2897,7 +2897,7 @@
             "months": [
               -0.4388,
               1.0183,
-              0.0593,
+              -0.0022,
               0.3658,
               0.6698,
               0.9961,
@@ -2918,7 +2918,7 @@
             "months": [
               -0.4159,
               1.3988,
-              0.2172,
+              0.1461,
               0.0147,
               0.1087,
               0.2772,
@@ -2934,33 +2934,12 @@
             "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 181%p 수준입니다."
           },
           {
-            "storeCode": "M22",
-            "storeName": "Yoho",
-            "months": [
-              -0.3749,
-              1.9845,
-              0.3006,
-              0.5283,
-              0.4826,
-              0.431,
-              0.4103,
-              0.4111,
-              0.3682,
-              0.0351,
-              0.3671,
-              0.7413
-            ],
-            "latestYoy": 0.7413,
-            "trend": "up",
-            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 236%p 수준입니다."
-          },
-          {
             "storeCode": "M16",
             "storeName": "Hysan",
             "months": [
               -0.2121,
               0.8071,
-              0.9299,
+              0.8256,
               0.7583,
               0.5976,
               0.7037,
@@ -2973,7 +2952,7 @@
             ],
             "latestYoy": 0.7223,
             "trend": "up",
-            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 114%p 수준입니다."
+            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 111%p 수준입니다."
           },
           {
             "storeCode": "MC3",
@@ -2981,7 +2960,7 @@
             "months": [
               -0.0472,
               0.8591,
-              0.3652,
+              0.2886,
               0.0592,
               0.3802,
               0.1458,
@@ -3002,7 +2981,7 @@
             "months": [
               -0.2298,
               0.7405,
-              0.2358,
+              0.1665,
               0.1163,
               0.0453,
               0.4129,
@@ -3023,7 +3002,7 @@
             "months": [
               -0.3485,
               1.2538,
-              0.2988,
+              0.2274,
               0.2445,
               4.6785,
               2.2532,
@@ -3044,7 +3023,7 @@
             "months": [
               -0.1216,
               0.7176,
-              0.1331,
+              0.0696,
               0.0809,
               0.0849,
               0.1331,
@@ -3065,7 +3044,7 @@
             "months": [
               -0.3893,
               1.3878,
-              0.35,
+              0.2771,
               0.0091,
               0.1206,
               0.0232,
@@ -3086,7 +3065,7 @@
             "months": [
               0.0432,
               0.934,
-              0.5243,
+              0.4419,
               0.1782,
               0.1933,
               0.2285,
@@ -3107,10 +3086,10 @@
             "months": [
               -0.231,
               1.2596,
-              0.3,
+              0.2298,
               0.1432,
-              0.09,
-              0.0354,
+              -0.6458,
+              -0.6203,
               0.0185,
               0.0348,
               0.0818,
@@ -3120,7 +3099,7 @@
             ],
             "latestYoy": 0.4459,
             "trend": "up",
-            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 149%p 수준입니다."
+            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 191%p 수준입니다."
           },
           {
             "storeCode": "M05",
@@ -3128,7 +3107,7 @@
             "months": [
               -0.2124,
               0.843,
-              0.4481,
+              0.3698,
               0.2551,
               0.242,
               0.1202,
@@ -3149,7 +3128,7 @@
             "months": [
               -0.2205,
               1.7767,
-              0.5775,
+              0.4923,
               -1.0,
               0.1313,
               0.106,
@@ -3170,9 +3149,9 @@
             "months": [
               -0.2861,
               1.9987,
-              -0.2321,
-              0.9234,
-              0.3047,
+              -0.2736,
+              -1.0,
+              -1.0,
               0.039,
               0.175,
               0.2315,
@@ -3183,7 +3162,7 @@
             ],
             "latestYoy": 0.2923,
             "trend": "up",
-            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 228%p 수준입니다."
+            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 300%p 수준입니다."
           },
           {
             "storeCode": "M15",
@@ -3191,7 +3170,7 @@
             "months": [
               -0.1595,
               1.2824,
-              0.2553,
+              0.1875,
               0.2293,
               0.5421,
               0.4915,
@@ -3212,7 +3191,7 @@
             "months": [
               -0.0028,
               1.9282,
-              0.1034,
+              0.0437,
               0.0652,
               0.2512,
               0.2915,
@@ -3233,7 +3212,7 @@
             "months": [
               0.0767,
               1.0229,
-              0.2478,
+              0.1795,
               0.0737,
               0.1501,
               0.2576,
@@ -3254,7 +3233,7 @@
             "months": [
               -0.2841,
               -0.3504,
-              0.4116,
+              0.3353,
               0.0685,
               0.2055,
               0.0526,
@@ -3275,7 +3254,7 @@
             "months": [
               2.2575,
               6.3361,
-              5.0958,
+              4.767,
               1.5513,
               0.8242,
               0.5329,
@@ -3359,7 +3338,7 @@
             "months": [
               -0.0691,
               4.2429,
-              0.6763,
+              0.5857,
               0.0766,
               1.1439,
               0.5729,
@@ -3396,12 +3375,33 @@
             "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 0%p 수준입니다."
           },
           {
+            "storeCode": "M22",
+            "storeName": "Yoho",
+            "months": [
+              -0.3749,
+              1.9845,
+              0.2303,
+              0.5283,
+              0.4826,
+              0.431,
+              0.4103,
+              0.4111,
+              0.3682,
+              -1.0,
+              -1.0,
+              -1.0
+            ],
+            "latestYoy": -1.0,
+            "trend": "down",
+            "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 298%p 수준입니다."
+          },
+          {
             "storeCode": "MC4",
             "storeName": "Senado-1",
             "months": [
               -0.3468,
               0.2983,
-              -0.1937,
+              -0.239,
               0.0758,
               0.2427,
               0.4772,
@@ -3488,7 +3488,7 @@
               "months": [
                 -0.3893,
                 1.3878,
-                0.35,
+                0.2771,
                 0.0091,
                 0.1206,
                 0.0232,
@@ -3574,7 +3574,7 @@
               "months": [
                 0.0767,
                 1.0229,
-                0.2478,
+                0.1795,
                 0.0737,
                 0.1501,
                 0.2576,
@@ -3660,7 +3660,7 @@
               "months": [
                 -0.2121,
                 0.8071,
-                0.9299,
+                0.8256,
                 0.7583,
                 0.5976,
                 0.7037,
@@ -3673,7 +3673,7 @@
               ],
               "latestYoy": 0.7223,
               "trend": "up",
-              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 114%p 수준입니다."
+              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 111%p 수준입니다."
             }
           ]
         },
@@ -3746,7 +3746,7 @@
               "months": [
                 0.0432,
                 0.934,
-                0.5243,
+                0.4419,
                 0.1782,
                 0.1933,
                 0.2285,
@@ -3918,10 +3918,10 @@
               "months": [
                 -0.231,
                 1.2596,
-                0.3,
+                0.2298,
                 0.1432,
-                0.09,
-                0.0354,
+                -0.6458,
+                -0.6203,
                 0.0185,
                 0.0348,
                 0.0818,
@@ -3931,7 +3931,7 @@
               ],
               "latestYoy": 0.4459,
               "trend": "up",
-              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 149%p 수준입니다."
+              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 191%p 수준입니다."
             }
           ]
         },
@@ -4004,7 +4004,7 @@
               "months": [
                 -0.2124,
                 0.843,
-                0.4481,
+                0.3698,
                 0.2551,
                 0.242,
                 0.1202,
@@ -4090,7 +4090,7 @@
               "months": [
                 -0.1216,
                 0.7176,
-                0.1331,
+                0.0696,
                 0.0809,
                 0.0849,
                 0.1331,
@@ -4176,7 +4176,7 @@
               "months": [
                 -0.4388,
                 1.0183,
-                0.0593,
+                -0.0022,
                 0.3658,
                 0.6698,
                 0.9961,
@@ -4262,7 +4262,7 @@
               "months": [
                 -0.0028,
                 1.9282,
-                0.1034,
+                0.0437,
                 0.0652,
                 0.2512,
                 0.2915,
@@ -4348,7 +4348,7 @@
               "months": [
                 -0.3485,
                 1.2538,
-                0.2988,
+                0.2274,
                 0.2445,
                 4.6785,
                 2.2532,
@@ -4434,9 +4434,9 @@
               "months": [
                 -0.2861,
                 1.9987,
-                -0.2321,
-                0.9234,
-                0.3047,
+                -0.2736,
+                -1.0,
+                -1.0,
                 0.039,
                 0.175,
                 0.2315,
@@ -4447,7 +4447,7 @@
               ],
               "latestYoy": 0.2923,
               "trend": "up",
-              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 228%p 수준입니다."
+              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 300%p 수준입니다."
             }
           ]
         },
@@ -4520,7 +4520,7 @@
               "months": [
                 -0.0691,
                 4.2429,
-                0.6763,
+                0.5857,
                 0.0766,
                 1.1439,
                 0.5729,
@@ -4692,7 +4692,7 @@
               "months": [
                 -0.0472,
                 0.8591,
-                0.3652,
+                0.2886,
                 0.0592,
                 0.3802,
                 0.1458,
@@ -4778,7 +4778,7 @@
               "months": [
                 -0.3468,
                 0.2983,
-                -0.1937,
+                -0.239,
                 0.0758,
                 0.2427,
                 0.4772,
@@ -4864,7 +4864,7 @@
               "months": [
                 -0.4159,
                 1.3988,
-                0.2172,
+                0.1461,
                 0.0147,
                 0.1087,
                 0.2772,
@@ -4950,7 +4950,7 @@
               "months": [
                 -0.2205,
                 1.7767,
-                0.5775,
+                0.4923,
                 -1.0,
                 0.1313,
                 0.106,
@@ -5036,7 +5036,7 @@
               "months": [
                 -0.1265,
                 1.2715,
-                -0.9602,
+                -0.9624,
                 0.7194,
                 0.7421,
                 0.767,
@@ -5294,7 +5294,7 @@
               "months": [
                 -0.2298,
                 0.7405,
-                0.2358,
+                0.1665,
                 0.1163,
                 0.0453,
                 0.4129,
@@ -5466,20 +5466,20 @@
               "months": [
                 -0.3749,
                 1.9845,
-                0.3006,
+                0.2303,
                 0.5283,
                 0.4826,
                 0.431,
                 0.4103,
                 0.4111,
                 0.3682,
-                0.0351,
-                0.3671,
-                0.7413
+                -1.0,
+                -1.0,
+                -1.0
               ],
-              "latestYoy": 0.7413,
-              "trend": "up",
-              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 236%p 수준입니다."
+              "latestYoy": -1.0,
+              "trend": "down",
+              "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 298%p 수준입니다."
             }
           ]
         },
@@ -5552,7 +5552,7 @@
               "months": [
                 -0.1595,
                 1.2824,
-                0.2553,
+                0.1875,
                 0.2293,
                 0.5421,
                 0.4915,
@@ -5638,7 +5638,7 @@
               "months": [
                 -0.2841,
                 -0.3504,
-                0.4116,
+                0.3353,
                 0.0685,
                 0.2055,
                 0.0526,
@@ -5810,7 +5810,7 @@
               "months": [
                 2.2575,
                 6.3361,
-                5.0958,
+                4.767,
                 1.5513,
                 0.8242,
                 0.5329,
@@ -5918,9 +5918,9 @@
         "title": "BEP 운영 진단",
         "description": "매장별 손익구조를 기준으로 손익분기점 달성 수준과 고정비 부담을 함께 확인합니다.",
         "note": "BEP 달성률은 실매출 대비 손익분기점 매출의 비율입니다. 값이 높을수록 현재 매출 여력이 더 크다는 뜻입니다.",
-        "summary": "홍콩/마카오 2026-12 기준 평균 BEP 달성률은 132.9%이며, 안정 18개, 관찰 1개, 개선 필요 0개 매장으로 구분됩니다. 평균 임차료 비중은 35.2%, 평균 급여 비중은 25.8%입니다.",
-        "avgAchievement": 1.3294,
-        "safeCount": 18,
+        "summary": "홍콩/마카오 2026-12 기준 평균 BEP 달성률은 133.6%이며, 안정 17개, 관찰 1개, 개선 필요 0개 매장으로 구분됩니다. 평균 임차료 비중은 34.5%, 평균 급여 비중은 25.9%입니다.",
+        "avgAchievement": 1.3363,
+        "safeCount": 17,
         "watchCount": 1,
         "riskCount": 0,
         "stores": [
@@ -6191,25 +6191,6 @@
             "statusLabel": "BEP 상회"
           },
           {
-            "storeCode": "M22",
-            "storeName": "Yoho",
-            "actualSales": 1300.0,
-            "rent": 629.47,
-            "payroll": 317.53,
-            "sga": 648.78,
-            "operatingProfit": 195.27,
-            "fixedCost": 947.0,
-            "contributionMargin": 0.8787,
-            "bepSales": 1077.77,
-            "bepAchievement": 1.2062,
-            "safetyMargin": 0.1709,
-            "rentRatio": 0.4842,
-            "payrollRatio": 0.2443,
-            "yoyGrowth": 0.7413,
-            "statusKey": "safe",
-            "statusLabel": "BEP 상회"
-          },
-          {
             "storeCode": "M14",
             "storeName": "NTP",
             "actualSales": 2000.0,
@@ -6356,22 +6337,22 @@
         2025,
         2026
       ],
-      "summary": "대만 최근 실적은 2026-12 기준으로, 전년 대비 성장세 유지입니다. 현재 할인율은 25.0% 수준으로 할인 부담이 커진 상태이며, 직접이익률은 11.7%로 수익성 관리가 필요한 상태입니다. 향후 3개월 매출 전망 합계는 81.5K입니다.",
+      "summary": "대만 최근 실적은 2026-12 기준으로, 전년 대비 성장세 유지입니다. 현재 할인율은 23.7% 수준으로 할인 부담이 커진 상태이며, 직접이익률은 14.6%로 수익성 관리가 필요한 상태입니다. 향후 3개월 매출 전망 합계는 89.0K입니다.",
       "kpis": [
         {
           "key": "actualSales",
           "label": "실매출",
-          "value": 22976.19,
-          "display": "23.0K",
-          "delta": 0.1507,
+          "value": 24785.71,
+          "display": "24.8K",
+          "delta": 0.2413,
           "deltaLabel": "YoY",
-          "insight": "당월 실매출은 23.0K이며 전년 동월 대비 15.1%입니다."
+          "insight": "당월 실매출은 24.8K이며 전년 동월 대비 24.1%입니다."
         },
         {
           "key": "yoyGrowth",
           "label": "YoY 성장률",
-          "value": 0.1507,
-          "display": "15.1%",
+          "value": 0.2413,
+          "display": "24.1%",
           "delta": null,
           "deltaLabel": "2026-12",
           "insight": "2026-12 기준 전년 동월 성장률입니다. 매출 추세의 방향성과 속도를 빠르게 확인할 수 있습니다."
@@ -6379,29 +6360,29 @@
         {
           "key": "discountRate",
           "label": "할인율",
-          "value": 0.2501,
-          "display": "25.0%",
+          "value": 0.2371,
+          "display": "23.7%",
           "delta": null,
           "deltaLabel": "Tag 대비",
-          "insight": "Tag 매출 대비 실매출 차이를 반영한 할인율입니다. 현재 수준은 25.0%입니다."
+          "insight": "Tag 매출 대비 실매출 차이를 반영한 할인율입니다. 현재 수준은 23.7%입니다."
         },
         {
           "key": "directProfit",
           "label": "직접이익",
-          "value": 2693.6,
-          "display": "2.7K",
-          "delta": 0.1172,
+          "value": 3608.76,
+          "display": "3.6K",
+          "delta": 0.1456,
           "deltaLabel": "Margin",
-          "insight": "매출총이익에서 직접비를 차감한 값으로, 매장 운영의 실질 수익성을 보여줍니다. 현재 이익률은 11.7%입니다."
+          "insight": "매출총이익에서 직접비를 차감한 값으로, 매장 운영의 실질 수익성을 보여줍니다. 현재 이익률은 14.6%입니다."
         },
         {
           "key": "forecastSales",
           "label": "3개월 매출 전망",
-          "value": 81515.32,
-          "display": "81.5K",
+          "value": 89036.16,
+          "display": "89.0K",
           "delta": null,
           "deltaLabel": "Forward 3M",
-          "insight": "최근 6개월 매출 흐름을 기준으로 단순 추세 예측을 적용했습니다. 향후 3개월 합계는 81.5K입니다."
+          "insight": "최근 6개월 매출 흐름을 기준으로 단순 추세 예측을 적용했습니다. 향후 3개월 합계는 89.0K입니다."
         }
       ],
       "monthly": [
@@ -7309,181 +7290,181 @@
           "period": "2026-03",
           "year": 2026,
           "month": 3,
-          "actualSales": 12772.34,
-          "tagSales": 15318.31,
-          "discountRate": 0.1662,
+          "actualSales": 12540.09,
+          "tagSales": 16085.78,
+          "discountRate": 0.2204,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 1728.88,
-          "directProfit": 1728.88,
-          "directMargin": 0.1354,
-          "rent": 3247.54,
-          "payroll": 2653.78,
-          "sga": 5758.64,
-          "yoyGrowth": 0.3447,
-          "yoyDirectProfit": 19.1056
+          "operatingProfit": 630.29,
+          "directProfit": 630.29,
+          "directMargin": 0.0503,
+          "rent": 3168.34,
+          "payroll": 2309.84,
+          "sga": 6360.21,
+          "yoyGrowth": 0.3203,
+          "yoyDirectProfit": 6.3298
         },
         {
           "period": "2026-04",
           "year": 2026,
           "month": 4,
-          "actualSales": 11966.67,
-          "tagSales": 15922.76,
-          "discountRate": 0.2485,
+          "actualSales": 13073.81,
+          "tagSales": 17307.25,
+          "discountRate": 0.2446,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 801.48,
-          "directProfit": 801.48,
-          "directMargin": 0.067,
-          "rent": 3493.65,
+          "operatingProfit": 1284.39,
+          "directProfit": 1284.39,
+          "directMargin": 0.0982,
+          "rent": 3764.32,
           "payroll": 2149.27,
-          "sga": 5671.83,
-          "yoyGrowth": 0.1571,
-          "yoyDirectProfit": 2.2052
+          "sga": 5818.42,
+          "yoyGrowth": 0.2641,
+          "yoyDirectProfit": 4.1363
         },
         {
           "period": "2026-05",
           "year": 2026,
           "month": 5,
-          "actualSales": 15359.52,
-          "tagSales": 19962.3,
-          "discountRate": 0.2306,
+          "actualSales": 15947.62,
+          "tagSales": 20712.44,
+          "discountRate": 0.23,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 1397.02,
-          "directProfit": 1397.02,
-          "directMargin": 0.091,
-          "rent": 4540.48,
+          "operatingProfit": 1634.1,
+          "directProfit": 1634.1,
+          "directMargin": 0.1025,
+          "rent": 4724.91,
           "payroll": 2737.1,
-          "sga": 7075.51,
-          "yoyGrowth": 0.065,
-          "yoyDirectProfit": 0.1044
+          "sga": 7167.72,
+          "yoyGrowth": 0.1057,
+          "yoyDirectProfit": 0.2918
         },
         {
           "period": "2026-06",
           "year": 2026,
           "month": 6,
-          "actualSales": 13459.52,
-          "tagSales": 17691.35,
-          "discountRate": 0.2392,
+          "actualSales": 14280.95,
+          "tagSales": 18684.71,
+          "discountRate": 0.2357,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 825.29,
-          "directProfit": 825.29,
-          "directMargin": 0.0613,
-          "rent": 4031.73,
+          "operatingProfit": 1222.23,
+          "directProfit": 1222.23,
+          "directMargin": 0.0856,
+          "rent": 4172.31,
           "payroll": 2568.44,
-          "sga": 6530.72,
-          "yoyGrowth": 0.0124,
-          "yoyDirectProfit": 0.0006
+          "sga": 6612.5,
+          "yoyGrowth": 0.0742,
+          "yoyDirectProfit": 0.4819
         },
         {
           "period": "2026-07",
           "year": 2026,
           "month": 7,
-          "actualSales": 12959.52,
-          "tagSales": 16968.61,
-          "discountRate": 0.2363,
+          "actualSales": 14078.57,
+          "tagSales": 18307.09,
+          "discountRate": 0.231,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 551.0,
-          "directProfit": 551.0,
-          "directMargin": 0.0425,
-          "rent": 3937.24,
+          "operatingProfit": 1087.51,
+          "directProfit": 1087.51,
+          "directMargin": 0.0772,
+          "rent": 4131.84,
           "payroll": 2559.59,
-          "sga": 6554.36,
-          "yoyGrowth": 0.0568,
-          "yoyDirectProfit": 0.686
+          "sga": 6675.12,
+          "yoyGrowth": 0.1481,
+          "yoyDirectProfit": 2.3278
         },
         {
           "period": "2026-08",
           "year": 2026,
           "month": 8,
-          "actualSales": 13521.43,
-          "tagSales": 17447.01,
-          "discountRate": 0.225,
+          "actualSales": 13964.29,
+          "tagSales": 18024.07,
+          "discountRate": 0.2252,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 782.25,
-          "directProfit": 782.25,
-          "directMargin": 0.0579,
-          "rent": 4224.76,
+          "operatingProfit": 1000.21,
+          "directProfit": 1000.21,
+          "directMargin": 0.0716,
+          "rent": 4260.58,
           "payroll": 2600.64,
-          "sga": 6719.96,
-          "yoyGrowth": 0.1073,
-          "yoyDirectProfit": 0.5912
+          "sga": 6745.77,
+          "yoyGrowth": 0.1435,
+          "yoyDirectProfit": 1.0346
         },
         {
           "period": "2026-09",
           "year": 2026,
           "month": 9,
-          "actualSales": 12804.76,
-          "tagSales": 16831.18,
-          "discountRate": 0.2392,
+          "actualSales": 13071.43,
+          "tagSales": 17249.75,
+          "discountRate": 0.2422,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 586.56,
-          "directProfit": 586.56,
-          "directMargin": 0.0458,
-          "rent": 3836.3,
+          "operatingProfit": 681.08,
+          "directProfit": 681.08,
+          "directMargin": 0.0521,
+          "rent": 3891.77,
           "payroll": 2465.15,
-          "sga": 6411.45,
-          "yoyGrowth": 0.2461,
-          "yoyDirectProfit": 5.6406
+          "sga": 6439.19,
+          "yoyGrowth": 0.272,
+          "yoyDirectProfit": 6.7106
         },
         {
           "period": "2026-10",
           "year": 2026,
           "month": 10,
-          "actualSales": 18438.1,
-          "tagSales": 24022.74,
-          "discountRate": 0.2325,
+          "actualSales": 18926.19,
+          "tagSales": 24632.91,
+          "discountRate": 0.2317,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 1761.05,
-          "directProfit": 1761.05,
-          "directMargin": 0.0955,
-          "rent": 5615.37,
+          "operatingProfit": 1947.21,
+          "directProfit": 1947.21,
+          "directMargin": 0.1029,
+          "rent": 5775.51,
           "payroll": 3030.84,
-          "sga": 8389.2,
-          "yoyGrowth": 0.2589,
-          "yoyDirectProfit": 0.6173
+          "sga": 8480.62,
+          "yoyGrowth": 0.2922,
+          "yoyDirectProfit": 0.7882
         },
         {
           "period": "2026-11",
           "year": 2026,
           "month": 11,
-          "actualSales": 21314.29,
-          "tagSales": 28139.45,
-          "discountRate": 0.2425,
+          "actualSales": 24061.9,
+          "tagSales": 31538.04,
+          "discountRate": 0.2371,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 1740.85,
-          "directProfit": 1740.85,
-          "directMargin": 0.0817,
-          "rent": 5838.23,
+          "operatingProfit": 3080.68,
+          "directProfit": 3080.68,
+          "directMargin": 0.128,
+          "rent": 6614.8,
           "payroll": 3080.32,
-          "sga": 9865.32,
-          "yoyGrowth": 0.0629,
-          "yoyDirectProfit": -0.3233
+          "sga": 10100.6,
+          "yoyGrowth": 0.1999,
+          "yoyDirectProfit": 0.1975
         },
         {
           "period": "2026-12",
           "year": 2026,
           "month": 12,
-          "actualSales": 22976.19,
-          "tagSales": 30638.6,
-          "discountRate": 0.2501,
+          "actualSales": 24785.71,
+          "tagSales": 32489.69,
+          "discountRate": 0.2371,
           "grossProfit": 0.0,
           "directCost": 0.0,
-          "operatingProfit": 2693.6,
-          "directProfit": 2693.6,
-          "directMargin": 0.1172,
-          "rent": 6506.72,
+          "operatingProfit": 3608.76,
+          "directProfit": 3608.76,
+          "directMargin": 0.1456,
+          "rent": 7008.2,
           "payroll": 3029.32,
-          "sga": 9712.28,
-          "yoyGrowth": 0.1507,
-          "yoyDirectProfit": 0.0429
+          "sga": 9968.02,
+          "yoyGrowth": 0.2413,
+          "yoyDirectProfit": 0.3972
         }
       ],
       "yearlyMetrics": {
@@ -7527,16 +7508,16 @@
             "values": [
               18850.31,
               19454.41,
-              12772.34,
-              11966.67,
-              15359.52,
-              13459.52,
-              12959.52,
-              13521.43,
-              12804.76,
-              18438.1,
-              21314.29,
-              22976.19
+              12540.09,
+              13073.81,
+              15947.62,
+              14280.95,
+              14078.57,
+              13964.29,
+              13071.43,
+              18926.19,
+              24061.9,
+              24785.71
             ]
           }
         ],
@@ -7580,16 +7561,16 @@
             "values": [
               0.2362,
               0.2494,
-              0.1662,
-              0.2485,
-              0.2306,
-              0.2392,
-              0.2363,
-              0.225,
-              0.2392,
-              0.2325,
-              0.2425,
-              0.2501
+              0.2204,
+              0.2446,
+              0.23,
+              0.2357,
+              0.231,
+              0.2252,
+              0.2422,
+              0.2317,
+              0.2371,
+              0.2371
             ]
           }
         ],
@@ -7633,16 +7614,16 @@
             "values": [
               2622.39,
               2332.17,
-              1728.88,
-              801.48,
-              1397.02,
-              825.29,
-              551.0,
-              782.25,
-              586.56,
-              1761.05,
-              1740.85,
-              2693.6
+              630.29,
+              1284.39,
+              1634.1,
+              1222.23,
+              1087.51,
+              1000.21,
+              681.08,
+              1947.21,
+              3080.68,
+              3608.76
             ]
           }
         ]
@@ -7651,23 +7632,23 @@
         {
           "period": "2027-01",
           "label": "1월",
-          "actualSales": 24911.91,
-          "directProfit": 2828.88,
-          "discountRate": 0.2376
+          "actualSales": 27116.34,
+          "directProfit": 3912.29,
+          "discountRate": 0.2341
         },
         {
           "period": "2027-02",
           "label": "2월",
-          "actualSales": 27171.77,
-          "directProfit": 3250.69,
-          "discountRate": 0.2376
+          "actualSales": 29678.72,
+          "directProfit": 4486.97,
+          "discountRate": 0.2341
         },
         {
           "period": "2027-03",
           "label": "3월",
-          "actualSales": 29431.64,
-          "directProfit": 3672.5,
-          "discountRate": 0.2376
+          "actualSales": 32241.1,
+          "directProfit": 5061.65,
+          "discountRate": 0.2341
         }
       ],
       "storeYoyByYear": {
@@ -9045,67 +9026,46 @@
             "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 228%p 수준입니다."
           },
           {
-            "storeCode": "TU2",
-            "storeName": "린커우아울렛",
-            "months": [
-              -0.5225,
-              0.6048,
-              -0.2135,
-              0.0986,
-              -0.0448,
-              -0.0341,
-              0.0193,
-              0.0492,
-              0.2953,
-              0.0699,
-              0.4007,
-              0.7491
-            ],
-            "latestYoy": 0.7491,
-            "trend": "up",
-            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 127%p 수준입니다."
-          },
-          {
-            "storeCode": "T04",
-            "storeName": "A11",
-            "months": [
-              -1.0,
-              -1.0,
-              -1.0,
-              -1.0,
-              -1.0,
-              -1.0,
-              -1.0,
-              0.584,
-              null,
-              null,
-              null,
-              null
-            ],
-            "latestYoy": 0.584,
-            "trend": "down",
-            "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 158%p 수준입니다."
-          },
-          {
             "storeCode": "TU1",
             "storeName": "Mitsui Outlet",
             "months": [
               -0.4775,
               1.0894,
-              -0.0127,
+              -0.0306,
               0.0967,
-              0.0024,
+              0.0848,
               -0.0133,
               0.0563,
               0.051,
-              0.0802,
-              -0.0635,
-              -0.003,
-              0.4414
+              0.3203,
+              0.0208,
+              0.0682,
+              0.2456
             ],
-            "latestYoy": 0.4414,
+            "latestYoy": 0.2456,
             "trend": "up",
             "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 157%p 수준입니다."
+          },
+          {
+            "storeCode": "TU2",
+            "storeName": "린커우아울렛",
+            "months": [
+              -0.5225,
+              0.6048,
+              -0.2278,
+              0.2556,
+              0.0613,
+              -0.0341,
+              0.0193,
+              0.0492,
+              0.2953,
+              0.0699,
+              0.1932,
+              0.2413
+            ],
+            "latestYoy": 0.2413,
+            "trend": "up",
+            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 113%p 수준입니다."
           },
           {
             "storeCode": "TU3",
@@ -9113,15 +9073,15 @@
             "months": [
               -0.3575,
               1.0143,
-              0.0507,
+              0.0317,
               0.095,
               -0.0006,
               -0.0523,
               0.0138,
               0.0546,
-              -0.029,
+              -0.0021,
               0.0555,
-              -0.2338,
+              0.0147,
               0.1865
             ],
             "latestYoy": 0.1865,
@@ -9134,7 +9094,7 @@
             "months": [
               null,
               null,
-              5.2765,
+              5.1626,
               1.2508,
               2.4812,
               0.3224,
@@ -9147,7 +9107,7 @@
             ],
             "latestYoy": 0.1732,
             "trend": "up",
-            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 510%p 수준입니다."
+            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 499%p 수준입니다."
           },
           {
             "storeCode": "T03",
@@ -9155,20 +9115,20 @@
             "months": [
               0.0273,
               0.5511,
-              0.3962,
-              0.0988,
-              0.0027,
-              -0.0691,
-              -0.029,
-              -0.0262,
+              0.3709,
+              0.2268,
+              0.1001,
+              0.1636,
+              0.2021,
+              0.1854,
               0.0423,
-              -0.003,
-              -0.1257,
+              0.0635,
+              0.0761,
               0.1703
             ],
             "latestYoy": 0.1703,
-            "trend": "flat",
-            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 68%p 수준입니다."
+            "trend": "up",
+            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 52%p 수준입니다."
           },
           {
             "storeCode": "TE1",
@@ -9176,20 +9136,83 @@
             "months": [
               0.0121,
               0.085,
-              0.1555,
+              0.1345,
               0.095,
               -0.0001,
               -0.0337,
               0.0251,
               0.0133,
               0.0278,
-              0.0033,
-              0.4149,
+              0.0323,
+              0.0838,
               0.1418
             ],
             "latestYoy": 0.1418,
+            "trend": "flat",
+            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 18%p 수준입니다."
+          },
+          {
+            "storeCode": "T17",
+            "storeName": "Lalaport Nangang(50PY)",
+            "months": [
+              null,
+              null,
+              null,
+              0.3303,
+              -0.0221,
+              0.1,
+              0.2977,
+              0.3308,
+              0.7601,
+              0.2685,
+              0.0141,
+              0.1204
+            ],
+            "latestYoy": 0.1204,
             "trend": "up",
-            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 45%p 수준입니다."
+            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 78%p 수준입니다."
+          },
+          {
+            "storeCode": "T11",
+            "storeName": "난팡 TS Mall",
+            "months": [
+              0.351,
+              0.9691,
+              0.4124,
+              0.1358,
+              -0.001,
+              0.031,
+              0.0355,
+              0.1975,
+              0.0005,
+              0.042,
+              0.0195,
+              0.09
+            ],
+            "latestYoy": 0.09,
+            "trend": "flat",
+            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 97%p 수준입니다."
+          },
+          {
+            "storeCode": "T02",
+            "storeName": "Nanjing",
+            "months": [
+              0.0249,
+              0.8187,
+              0.5159,
+              0.1545,
+              0.0021,
+              -0.0566,
+              0.1349,
+              -0.0132,
+              0.0656,
+              0.0407,
+              0.0904,
+              0.0875
+            ],
+            "latestYoy": 0.0875,
+            "trend": "flat",
+            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 88%p 수준입니다."
           },
           {
             "storeCode": "T10",
@@ -9197,15 +9220,15 @@
             "months": [
               -0.1182,
               0.8727,
-              0.2676,
-              0.0943,
+              0.2446,
+              0.1665,
               0.0002,
               -0.028,
               0.0056,
               -0.0141,
-              0.021,
-              -0.0194,
-              -0.0108,
+              0.122,
+              0.0078,
+              0.0491,
               0.0682
             ],
             "latestYoy": 0.0682,
@@ -9239,209 +9262,20 @@
             "months": [
               0.1912,
               1.5438,
-              0.2767,
+              0.2536,
               0.0985,
               0.0017,
-              -0.2247,
-              0.0345,
-              -0.0926,
-              -0.0862,
-              -0.1315,
-              -0.1834,
+              -0.0493,
+              0.2732,
+              0.2661,
+              0.0344,
+              0.0264,
+              0.0087,
               0.0564
             ],
             "latestYoy": 0.0564,
             "trend": "flat",
-            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 177%p 수준입니다."
-          },
-          {
-            "storeCode": "T02",
-            "storeName": "Nanjing",
-            "months": [
-              0.0249,
-              0.8187,
-              0.5439,
-              0.0942,
-              0.0021,
-              -0.0566,
-              -0.0467,
-              -0.0132,
-              -0.0054,
-              0.0133,
-              -0.19,
-              0.0271
-            ],
-            "latestYoy": 0.0271,
-            "trend": "flat",
-            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 101%p 수준입니다."
-          },
-          {
-            "storeCode": "D01",
-            "storeName": "A11",
-            "months": [
-              0.5479,
-              0.7915,
-              -0.023,
-              0.8245,
-              0.4137,
-              0.7608,
-              0.9147,
-              0.4799,
-              0.9714,
-              0.0576,
-              0.0296,
-              0.0155
-            ],
-            "latestYoy": 0.0155,
-            "trend": "flat",
-            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 99%p 수준입니다."
-          },
-          {
-            "storeCode": "DE1",
-            "storeName": "Momo",
-            "months": [
-              2.1283,
-              2.7131,
-              1.8266,
-              3.3508,
-              3.1811,
-              0.6513,
-              0.4543,
-              0.7404,
-              1.9105,
-              2.2273,
-              0.3539,
-              0.0154
-            ],
-            "latestYoy": 0.0154,
-            "trend": "up",
-            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 334%p 수준입니다."
-          },
-          {
-            "storeCode": "T01",
-            "storeName": "Zhongxiao",
-            "months": [
-              0.0621,
-              0.8311,
-              -0.2668,
-              0.3172,
-              0.1965,
-              0.2199,
-              0.2477,
-              0.417,
-              0.212,
-              0.4109,
-              0.0576,
-              -0.002
-            ],
-            "latestYoy": -0.002,
-            "trend": "up",
-            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 110%p 수준입니다."
-          },
-          {
-            "storeCode": "TE2",
-            "storeName": "자사몰",
-            "months": [
-              0.3398,
-              0.2061,
-              0.4264,
-              0.0952,
-              -0.0005,
-              -0.1433,
-              -0.2087,
-              -0.0214,
-              -0.0081,
-              0.003,
-              -0.1638,
-              -0.0033
-            ],
-            "latestYoy": -0.0033,
-            "trend": "flat",
-            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 64%p 수준입니다."
-          },
-          {
-            "storeCode": "T17",
-            "storeName": "Lalaport Nangang(50PY)",
-            "months": [
-              null,
-              null,
-              null,
-              0.3303,
-              -0.0221,
-              0.1,
-              0.2977,
-              0.3308,
-              0.7601,
-              0.2685,
-              0.0141,
-              -0.0089
-            ],
-            "latestYoy": -0.0089,
-            "trend": "flat",
-            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 78%p 수준입니다."
-          },
-          {
-            "storeCode": "T08",
-            "storeName": "한신아레나",
-            "months": [
-              -0.0411,
-              1.1936,
-              null,
-              0.3713,
-              -0.0488,
-              -0.0748,
-              -0.0286,
-              -0.0165,
-              -0.0119,
-              -0.0009,
-              -0.2881,
-              -0.0553
-            ],
-            "latestYoy": -0.0553,
-            "trend": "down",
-            "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 148%p 수준입니다."
-          },
-          {
-            "storeCode": "T06",
-            "storeName": "중우타이중",
-            "months": [
-              -0.0477,
-              0.8198,
-              0.4632,
-              0.096,
-              0.002,
-              -0.1558,
-              -0.0658,
-              -0.0182,
-              0.0949,
-              0.1711,
-              -0.0864,
-              -0.0812
-            ],
-            "latestYoy": -0.0812,
-            "trend": "flat",
-            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 98%p 수준입니다."
-          },
-          {
-            "storeCode": "T12",
-            "storeName": "Taimall",
-            "months": [
-              -0.1213,
-              1.5692,
-              -0.1538,
-              0.1613,
-              0.0014,
-              0.0188,
-              -0.0065,
-              -0.0059,
-              0.0042,
-              -0.1237,
-              -0.0557,
-              -0.0848
-            ],
-            "latestYoy": -0.0848,
-            "trend": "flat",
-            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 172%p 수준입니다."
+            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 159%p 수준입니다."
           },
           {
             "storeCode": "T18",
@@ -9457,33 +9291,12 @@
               0.3445,
               0.4345,
               0.0212,
-              -0.1311,
-              -0.202
+              0.0664,
+              0.0409
             ],
-            "latestYoy": -0.202,
-            "trend": "down",
-            "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 236%p 수준입니다."
-          },
-          {
-            "storeCode": "T11",
-            "storeName": "난팡 TS Mall",
-            "months": [
-              0.351,
-              0.9691,
-              0.4385,
-              0.0979,
-              -0.001,
-              0.031,
-              -0.094,
-              -0.0202,
-              0.0005,
-              0.042,
-              -0.1625,
-              -0.2214
-            ],
-            "latestYoy": -0.2214,
-            "trend": "down",
-            "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 119%p 수준입니다."
+            "latestYoy": 0.0409,
+            "trend": "flat",
+            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 213%p 수준입니다."
           },
           {
             "storeCode": "T14",
@@ -9491,20 +9304,83 @@
             "months": [
               0.2033,
               1.6339,
-              0.2652,
-              0.0954,
-              0.0006,
-              -0.0285,
-              0.0495,
-              -0.1592,
-              0.181,
-              -0.0166,
-              -0.2096,
-              -0.3434
+              0.2423,
+              0.6349,
+              0.2049,
+              0.1566,
+              0.588,
+              0.2185,
+              0.5747,
+              0.0297,
+              0.0856,
+              0.0348
             ],
-            "latestYoy": -0.3434,
-            "trend": "down",
-            "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 198%p 수준입니다."
+            "latestYoy": 0.0348,
+            "trend": "flat",
+            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 160%p 수준입니다."
+          },
+          {
+            "storeCode": "T08",
+            "storeName": "한신아레나",
+            "months": [
+              -0.0411,
+              1.1936,
+              null,
+              0.8284,
+              -0.0488,
+              -0.0748,
+              -0.0286,
+              -0.0165,
+              -0.0119,
+              -0.0009,
+              0.051,
+              0.0338
+            ],
+            "latestYoy": 0.0338,
+            "trend": "flat",
+            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 127%p 수준입니다."
+          },
+          {
+            "storeCode": "T12",
+            "storeName": "Taimall",
+            "months": [
+              -0.1213,
+              1.5692,
+              -0.1692,
+              0.659,
+              0.0014,
+              0.0188,
+              -0.0065,
+              -0.0059,
+              0.0042,
+              0.136,
+              0.0072,
+              0.0259
+            ],
+            "latestYoy": 0.0259,
+            "trend": "flat",
+            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 174%p 수준입니다."
+          },
+          {
+            "storeCode": "TE2",
+            "storeName": "자사몰",
+            "months": [
+              0.3398,
+              0.2061,
+              0.4005,
+              0.2088,
+              -0.0005,
+              -0.0524,
+              -0.0249,
+              0.0543,
+              -0.0081,
+              0.003,
+              0.0707,
+              0.0216
+            ],
+            "latestYoy": 0.0216,
+            "trend": "flat",
+            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 45%p 수준입니다."
           },
           {
             "storeCode": "TE3",
@@ -9512,20 +9388,104 @@
             "months": [
               1.1761,
               0.5244,
-              0.7525,
-              0.0953,
+              0.7207,
+              0.3982,
               0.0006,
-              -0.2127,
-              -0.0371,
-              0.029,
+              -0.0122,
+              0.1745,
+              0.1319,
               0.0088,
               0.0231,
-              -0.5282,
-              -0.3772
+              0.0484,
+              0.0194
             ],
-            "latestYoy": -0.3772,
-            "trend": "down",
-            "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 170%p 수준입니다."
+            "latestYoy": 0.0194,
+            "trend": "flat",
+            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 119%p 수준입니다."
+          },
+          {
+            "storeCode": "D01",
+            "storeName": "A11",
+            "months": [
+              0.5479,
+              0.7915,
+              -0.0407,
+              0.8245,
+              0.4137,
+              0.7608,
+              0.9147,
+              0.4799,
+              0.9714,
+              0.0576,
+              0.0296,
+              0.0155
+            ],
+            "latestYoy": 0.0155,
+            "trend": "flat",
+            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 101%p 수준입니다."
+          },
+          {
+            "storeCode": "DE1",
+            "storeName": "Momo",
+            "months": [
+              2.1283,
+              2.7131,
+              1.7753,
+              3.3508,
+              3.1811,
+              0.6513,
+              0.4543,
+              0.7404,
+              1.9105,
+              2.2273,
+              0.3539,
+              0.0154
+            ],
+            "latestYoy": 0.0154,
+            "trend": "up",
+            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 334%p 수준입니다."
+          },
+          {
+            "storeCode": "T06",
+            "storeName": "중우타이중",
+            "months": [
+              -0.0477,
+              0.8198,
+              0.4364,
+              0.1877,
+              0.0256,
+              -0.0452,
+              0.0927,
+              0.1031,
+              0.0949,
+              0.1711,
+              0.0006,
+              0.0049
+            ],
+            "latestYoy": 0.0049,
+            "trend": "flat",
+            "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 87%p 수준입니다."
+          },
+          {
+            "storeCode": "T01",
+            "storeName": "Zhongxiao",
+            "months": [
+              0.0621,
+              0.8311,
+              -0.2806,
+              0.3172,
+              0.3806,
+              0.4877,
+              0.6418,
+              0.7713,
+              0.3957,
+              0.4221,
+              0.0614,
+              0.0044
+            ],
+            "latestYoy": 0.0044,
+            "trend": "up",
+            "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 111%p 수준입니다."
           },
           {
             "storeCode": "D02",
@@ -9539,6 +9499,27 @@
               -1.0,
               null,
               null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "latestYoy": -1.0,
+            "trend": "down",
+            "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 0%p 수준입니다."
+          },
+          {
+            "storeCode": "T04",
+            "storeName": "A11",
+            "months": [
+              -1.0,
+              -1.0,
+              -1.0,
+              -1.0,
+              -1.0,
+              -1.0,
+              -1.0,
+              -1.0,
               null,
               null,
               null,
@@ -9704,20 +9685,20 @@
               "months": [
                 0.0273,
                 0.5511,
-                0.3962,
-                0.0988,
-                0.0027,
-                -0.0691,
-                -0.029,
-                -0.0262,
+                0.3709,
+                0.2268,
+                0.1001,
+                0.1636,
+                0.2021,
+                0.1854,
                 0.0423,
-                -0.003,
-                -0.1257,
+                0.0635,
+                0.0761,
                 0.1703
               ],
               "latestYoy": 0.1703,
-              "trend": "flat",
-              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 68%p 수준입니다."
+              "trend": "up",
+              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 52%p 수준입니다."
             }
           ]
         },
@@ -9790,7 +9771,7 @@
               "months": [
                 0.5479,
                 0.7915,
-                -0.023,
+                -0.0407,
                 0.8245,
                 0.4137,
                 0.7608,
@@ -9803,7 +9784,7 @@
               ],
               "latestYoy": 0.0155,
               "trend": "flat",
-              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 99%p 수준입니다."
+              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 101%p 수준입니다."
             }
           ]
         },
@@ -9881,15 +9862,15 @@
                 -1.0,
                 -1.0,
                 -1.0,
-                0.584,
+                -1.0,
                 null,
                 null,
                 null,
                 null
               ],
-              "latestYoy": 0.584,
+              "latestYoy": -1.0,
               "trend": "down",
-              "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 158%p 수준입니다."
+              "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 0%p 수준입니다."
             }
           ]
         },
@@ -10048,15 +10029,15 @@
               "months": [
                 -0.3575,
                 1.0143,
-                0.0507,
+                0.0317,
                 0.095,
                 -0.0006,
                 -0.0523,
                 0.0138,
                 0.0546,
-                -0.029,
+                -0.0021,
                 0.0555,
-                -0.2338,
+                0.0147,
                 0.1865
               ],
               "latestYoy": 0.1865,
@@ -10143,11 +10124,11 @@
                 0.7601,
                 0.2685,
                 0.0141,
-                -0.0089
+                0.1204
               ],
-              "latestYoy": -0.0089,
-              "trend": "flat",
-              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 78%p 수준입니다."
+              "latestYoy": 0.1204,
+              "trend": "up",
+              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 78%p 수준입니다."
             }
           ]
         },
@@ -10228,12 +10209,12 @@
                 0.3445,
                 0.4345,
                 0.0212,
-                -0.1311,
-                -0.202
+                0.0664,
+                0.0409
               ],
-              "latestYoy": -0.202,
-              "trend": "down",
-              "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 236%p 수준입니다."
+              "latestYoy": 0.0409,
+              "trend": "flat",
+              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 213%p 수준입니다."
             }
           ]
         },
@@ -10392,20 +10373,20 @@
               "months": [
                 0.2033,
                 1.6339,
-                0.2652,
-                0.0954,
-                0.0006,
-                -0.0285,
-                0.0495,
-                -0.1592,
-                0.181,
-                -0.0166,
-                -0.2096,
-                -0.3434
+                0.2423,
+                0.6349,
+                0.2049,
+                0.1566,
+                0.588,
+                0.2185,
+                0.5747,
+                0.0297,
+                0.0856,
+                0.0348
               ],
-              "latestYoy": -0.3434,
-              "trend": "down",
-              "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 198%p 수준입니다."
+              "latestYoy": 0.0348,
+              "trend": "flat",
+              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 160%p 수준입니다."
             }
           ]
         },
@@ -10478,18 +10459,18 @@
               "months": [
                 -0.4775,
                 1.0894,
-                -0.0127,
+                -0.0306,
                 0.0967,
-                0.0024,
+                0.0848,
                 -0.0133,
                 0.0563,
                 0.051,
-                0.0802,
-                -0.0635,
-                -0.003,
-                0.4414
+                0.3203,
+                0.0208,
+                0.0682,
+                0.2456
               ],
-              "latestYoy": 0.4414,
+              "latestYoy": 0.2456,
               "trend": "up",
               "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 157%p 수준입니다."
             }
@@ -10564,7 +10545,7 @@
               "months": [
                 2.1283,
                 2.7131,
-                1.8266,
+                1.7753,
                 3.3508,
                 3.1811,
                 0.6513,
@@ -10650,20 +10631,20 @@
               "months": [
                 0.0121,
                 0.085,
-                0.1555,
+                0.1345,
                 0.095,
                 -0.0001,
                 -0.0337,
                 0.0251,
                 0.0133,
                 0.0278,
-                0.0033,
-                0.4149,
+                0.0323,
+                0.0838,
                 0.1418
               ],
               "latestYoy": 0.1418,
-              "trend": "up",
-              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 45%p 수준입니다."
+              "trend": "flat",
+              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 18%p 수준입니다."
             }
           ]
         },
@@ -10736,20 +10717,20 @@
               "months": [
                 0.0249,
                 0.8187,
-                0.5439,
-                0.0942,
+                0.5159,
+                0.1545,
                 0.0021,
                 -0.0566,
-                -0.0467,
+                0.1349,
                 -0.0132,
-                -0.0054,
-                0.0133,
-                -0.19,
-                0.0271
+                0.0656,
+                0.0407,
+                0.0904,
+                0.0875
               ],
-              "latestYoy": 0.0271,
+              "latestYoy": 0.0875,
               "trend": "flat",
-              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 101%p 수준입니다."
+              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 88%p 수준입니다."
             }
           ]
         },
@@ -11080,20 +11061,20 @@
               "months": [
                 0.1912,
                 1.5438,
-                0.2767,
+                0.2536,
                 0.0985,
                 0.0017,
-                -0.2247,
-                0.0345,
-                -0.0926,
-                -0.0862,
-                -0.1315,
-                -0.1834,
+                -0.0493,
+                0.2732,
+                0.2661,
+                0.0344,
+                0.0264,
+                0.0087,
                 0.0564
               ],
               "latestYoy": 0.0564,
               "trend": "flat",
-              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 177%p 수준입니다."
+              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 159%p 수준입니다."
             }
           ]
         },
@@ -11338,20 +11319,20 @@
               "months": [
                 1.1761,
                 0.5244,
-                0.7525,
-                0.0953,
+                0.7207,
+                0.3982,
                 0.0006,
-                -0.2127,
-                -0.0371,
-                0.029,
+                -0.0122,
+                0.1745,
+                0.1319,
                 0.0088,
                 0.0231,
-                -0.5282,
-                -0.3772
+                0.0484,
+                0.0194
               ],
-              "latestYoy": -0.3772,
-              "trend": "down",
-              "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 170%p 수준입니다."
+              "latestYoy": 0.0194,
+              "trend": "flat",
+              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 119%p 수준입니다."
             }
           ]
         },
@@ -11424,20 +11405,20 @@
               "months": [
                 -0.1213,
                 1.5692,
-                -0.1538,
-                0.1613,
+                -0.1692,
+                0.659,
                 0.0014,
                 0.0188,
                 -0.0065,
                 -0.0059,
                 0.0042,
-                -0.1237,
-                -0.0557,
-                -0.0848
+                0.136,
+                0.0072,
+                0.0259
               ],
-              "latestYoy": -0.0848,
+              "latestYoy": 0.0259,
               "trend": "flat",
-              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 172%p 수준입니다."
+              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 174%p 수준입니다."
             }
           ]
         },
@@ -11510,20 +11491,20 @@
               "months": [
                 0.0621,
                 0.8311,
-                -0.2668,
+                -0.2806,
                 0.3172,
-                0.1965,
-                0.2199,
-                0.2477,
-                0.417,
-                0.212,
-                0.4109,
-                0.0576,
-                -0.002
+                0.3806,
+                0.4877,
+                0.6418,
+                0.7713,
+                0.3957,
+                0.4221,
+                0.0614,
+                0.0044
               ],
-              "latestYoy": -0.002,
+              "latestYoy": 0.0044,
               "trend": "up",
-              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 110%p 수준입니다."
+              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 111%p 수준입니다."
             }
           ]
         },
@@ -11596,20 +11577,20 @@
               "months": [
                 0.351,
                 0.9691,
-                0.4385,
-                0.0979,
+                0.4124,
+                0.1358,
                 -0.001,
                 0.031,
-                -0.094,
-                -0.0202,
+                0.0355,
+                0.1975,
                 0.0005,
                 0.042,
-                -0.1625,
-                -0.2214
+                0.0195,
+                0.09
               ],
-              "latestYoy": -0.2214,
-              "trend": "down",
-              "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 119%p 수준입니다."
+              "latestYoy": 0.09,
+              "trend": "flat",
+              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 97%p 수준입니다."
             }
           ]
         },
@@ -11682,20 +11663,20 @@
               "months": [
                 -0.5225,
                 0.6048,
-                -0.2135,
-                0.0986,
-                -0.0448,
+                -0.2278,
+                0.2556,
+                0.0613,
                 -0.0341,
                 0.0193,
                 0.0492,
                 0.2953,
                 0.0699,
-                0.4007,
-                0.7491
+                0.1932,
+                0.2413
               ],
-              "latestYoy": 0.7491,
+              "latestYoy": 0.2413,
               "trend": "up",
-              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 127%p 수준입니다."
+              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 113%p 수준입니다."
             }
           ]
         },
@@ -11940,15 +11921,15 @@
               "months": [
                 -0.1182,
                 0.8727,
-                0.2676,
-                0.0943,
+                0.2446,
+                0.1665,
                 0.0002,
                 -0.028,
                 0.0056,
                 -0.0141,
-                0.021,
-                -0.0194,
-                -0.0108,
+                0.122,
+                0.0078,
+                0.0491,
                 0.0682
               ],
               "latestYoy": 0.0682,
@@ -12026,7 +12007,7 @@
               "months": [
                 null,
                 null,
-                5.2765,
+                5.1626,
                 1.2508,
                 2.4812,
                 0.3224,
@@ -12039,7 +12020,7 @@
               ],
               "latestYoy": 0.1732,
               "trend": "up",
-              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 510%p 수준입니다."
+              "insight": "최근 월별 YOY가 우상향이며, 변동 폭은 499%p 수준입니다."
             }
           ]
         },
@@ -12112,20 +12093,20 @@
               "months": [
                 0.3398,
                 0.2061,
-                0.4264,
-                0.0952,
+                0.4005,
+                0.2088,
                 -0.0005,
-                -0.1433,
-                -0.2087,
-                -0.0214,
+                -0.0524,
+                -0.0249,
+                0.0543,
                 -0.0081,
                 0.003,
-                -0.1638,
-                -0.0033
+                0.0707,
+                0.0216
               ],
-              "latestYoy": -0.0033,
+              "latestYoy": 0.0216,
               "trend": "flat",
-              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 64%p 수준입니다."
+              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 45%p 수준입니다."
             }
           ]
         },
@@ -12198,20 +12179,20 @@
               "months": [
                 -0.0477,
                 0.8198,
-                0.4632,
-                0.096,
-                0.002,
-                -0.1558,
-                -0.0658,
-                -0.0182,
+                0.4364,
+                0.1877,
+                0.0256,
+                -0.0452,
+                0.0927,
+                0.1031,
                 0.0949,
                 0.1711,
-                -0.0864,
-                -0.0812
+                0.0006,
+                0.0049
               ],
-              "latestYoy": -0.0812,
+              "latestYoy": 0.0049,
               "trend": "flat",
-              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 98%p 수준입니다."
+              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 87%p 수준입니다."
             }
           ]
         },
@@ -12285,19 +12266,19 @@
                 -0.0411,
                 1.1936,
                 null,
-                0.3713,
+                0.8284,
                 -0.0488,
                 -0.0748,
                 -0.0286,
                 -0.0165,
                 -0.0119,
                 -0.0009,
-                -0.2881,
-                -0.0553
+                0.051,
+                0.0338
               ],
-              "latestYoy": -0.0553,
-              "trend": "down",
-              "insight": "최근 월별 YOY가 둔화 흐름이며, 변동 폭은 148%p 수준입니다."
+              "latestYoy": 0.0338,
+              "trend": "flat",
+              "insight": "최근 월별 흐름이 비교적 안정적이며, 변동 폭은 127%p 수준입니다."
             }
           ]
         }
@@ -12306,85 +12287,161 @@
         "title": "BEP 운영 진단",
         "description": "매장별 손익구조를 기준으로 손익분기점 달성 수준과 고정비 부담을 함께 확인합니다.",
         "note": "BEP 달성률은 실매출 대비 손익분기점 매출의 비율입니다. 값이 높을수록 현재 매출 여력이 더 크다는 뜻입니다.",
-        "summary": "대만 2026-12 기준 평균 BEP 달성률은 125.4%이며, 안정 20개, 관찰 2개, 개선 필요 1개 매장으로 구분됩니다. 평균 임차료 비중은 37.9%, 평균 급여 비중은 14.9%입니다.",
-        "avgAchievement": 1.2541,
-        "safeCount": 20,
-        "watchCount": 2,
+        "summary": "대만 2026-12 기준 평균 BEP 달성률은 130.0%이며, 안정 19개, 관찰 3개, 개선 필요 1개 매장으로 구분됩니다. 평균 임차료 비중은 37.9%, 평균 급여 비중은 13.8%입니다.",
+        "avgAchievement": 1.3002,
+        "safeCount": 19,
+        "watchCount": 3,
         "riskCount": 1,
         "stores": [
           {
+            "storeCode": "T11",
+            "storeName": "난팡 TS Mall",
+            "actualSales": 666.67,
+            "rent": 203.34,
+            "payroll": 80.72,
+            "sga": 201.1,
+            "operatingProfit": 178.27,
+            "fixedCost": 284.06,
+            "contributionMargin": 0.6935,
+            "bepSales": 409.61,
+            "bepAchievement": 1.6276,
+            "safetyMargin": 0.3856,
+            "rentRatio": 0.305,
+            "payrollRatio": 0.1211,
+            "yoyGrowth": 0.09,
+            "statusKey": "safe",
+            "statusLabel": "BEP 상회"
+          },
+          {
             "storeCode": "T12",
             "storeName": "Taimall",
-            "actualSales": 807.14,
-            "rent": 243.17,
+            "actualSales": 904.76,
+            "rent": 272.46,
             "payroll": 121.24,
-            "sga": 274.56,
-            "operatingProfit": 184.74,
-            "fixedCost": 364.41,
-            "contributionMargin": 0.6804,
-            "bepSales": 535.61,
-            "bepAchievement": 1.507,
-            "safetyMargin": 0.3364,
-            "rentRatio": 0.3013,
-            "payrollRatio": 0.1502,
-            "yoyGrowth": -0.0848,
+            "sga": 289.2,
+            "operatingProfit": 225.65,
+            "fixedCost": 393.69,
+            "contributionMargin": 0.6845,
+            "bepSales": 575.12,
+            "bepAchievement": 1.5732,
+            "safetyMargin": 0.3643,
+            "rentRatio": 0.3011,
+            "payrollRatio": 0.134,
+            "yoyGrowth": 0.0259,
+            "statusKey": "safe",
+            "statusLabel": "BEP 상회"
+          },
+          {
+            "storeCode": "T07",
+            "storeName": "빅시티",
+            "actualSales": 1190.48,
+            "rent": 511.9,
+            "payroll": 105.63,
+            "sga": 412.04,
+            "operatingProfit": 347.19,
+            "fixedCost": 617.53,
+            "contributionMargin": 0.8104,
+            "bepSales": 762.04,
+            "bepAchievement": 1.5622,
+            "safetyMargin": 0.3599,
+            "rentRatio": 0.43,
+            "payrollRatio": 0.0887,
+            "yoyGrowth": null,
+            "statusKey": "safe",
+            "statusLabel": "BEP 상회"
+          },
+          {
+            "storeCode": "T14",
+            "storeName": "MetroWalk (40PY)",
+            "actualSales": 690.48,
+            "rent": 221.98,
+            "payroll": 64.31,
+            "sga": 255.44,
+            "operatingProfit": 137.47,
+            "fixedCost": 286.29,
+            "contributionMargin": 0.6137,
+            "bepSales": 466.48,
+            "bepAchievement": 1.4802,
+            "safetyMargin": 0.3244,
+            "rentRatio": 0.3215,
+            "payrollRatio": 0.0931,
+            "yoyGrowth": 0.0348,
             "statusKey": "safe",
             "statusLabel": "BEP 상회"
           },
           {
             "storeCode": "T02",
             "storeName": "Nanjing",
-            "actualSales": 809.52,
-            "rent": 308.44,
+            "actualSales": 857.14,
+            "rent": 326.53,
             "payroll": 108.64,
-            "sga": 285.5,
-            "operatingProfit": 189.11,
-            "fixedCost": 417.08,
-            "contributionMargin": 0.7488,
-            "bepSales": 556.98,
-            "bepAchievement": 1.4534,
-            "safetyMargin": 0.312,
+            "sga": 294.55,
+            "operatingProfit": 207.98,
+            "fixedCost": 435.17,
+            "contributionMargin": 0.7503,
+            "bepSales": 579.96,
+            "bepAchievement": 1.4779,
+            "safetyMargin": 0.3234,
             "rentRatio": 0.381,
-            "payrollRatio": 0.1342,
-            "yoyGrowth": 0.0271,
+            "payrollRatio": 0.1267,
+            "yoyGrowth": 0.0875,
             "statusKey": "safe",
             "statusLabel": "BEP 상회"
           },
           {
             "storeCode": "T08",
             "storeName": "한신아레나",
-            "actualSales": 1261.9,
-            "rent": 536.11,
+            "actualSales": 1380.95,
+            "rent": 586.11,
             "payroll": 138.24,
-            "sga": 424.57,
-            "operatingProfit": 293.52,
-            "fixedCost": 674.36,
-            "contributionMargin": 0.767,
-            "bepSales": 879.22,
-            "bepAchievement": 1.4353,
-            "safetyMargin": 0.3033,
-            "rentRatio": 0.4248,
-            "payrollRatio": 0.1096,
-            "yoyGrowth": -0.0553,
+            "sga": 449.57,
+            "operatingProfit": 336.26,
+            "fixedCost": 724.36,
+            "contributionMargin": 0.768,
+            "bepSales": 943.13,
+            "bepAchievement": 1.4642,
+            "safetyMargin": 0.317,
+            "rentRatio": 0.4244,
+            "payrollRatio": 0.1001,
+            "yoyGrowth": 0.0338,
             "statusKey": "safe",
             "statusLabel": "BEP 상회"
           },
           {
-            "storeCode": "T11",
-            "storeName": "난팡 TS Mall",
-            "actualSales": 476.19,
-            "rent": 146.19,
-            "payroll": 80.72,
-            "sga": 172.52,
-            "operatingProfit": 98.45,
-            "fixedCost": 226.92,
-            "contributionMargin": 0.6833,
-            "bepSales": 332.1,
-            "bepAchievement": 1.4339,
-            "safetyMargin": 0.3026,
-            "rentRatio": 0.307,
-            "payrollRatio": 0.1695,
-            "yoyGrowth": -0.2214,
+            "storeCode": "T06",
+            "storeName": "중우타이중",
+            "actualSales": 833.33,
+            "rent": 276.28,
+            "payroll": 114.59,
+            "sga": 299.24,
+            "operatingProfit": 174.96,
+            "fixedCost": 390.87,
+            "contributionMargin": 0.679,
+            "bepSales": 575.66,
+            "bepAchievement": 1.4476,
+            "safetyMargin": 0.3092,
+            "rentRatio": 0.3315,
+            "payrollRatio": 0.1375,
+            "yoyGrowth": 0.0049,
+            "statusKey": "safe",
+            "statusLabel": "BEP 상회"
+          },
+          {
+            "storeCode": "T18",
+            "storeName": "Lalaport Taichung",
+            "actualSales": 714.29,
+            "rent": 229.86,
+            "payroll": 97.36,
+            "sga": 289.66,
+            "operatingProfit": 137.12,
+            "fixedCost": 327.22,
+            "contributionMargin": 0.6501,
+            "bepSales": 503.35,
+            "bepAchievement": 1.4191,
+            "safetyMargin": 0.2953,
+            "rentRatio": 0.3218,
+            "payrollRatio": 0.1363,
+            "yoyGrowth": 0.0409,
             "statusKey": "safe",
             "statusLabel": "BEP 상회"
           },
@@ -12427,21 +12484,21 @@
             "statusLabel": "BEP 상회"
           },
           {
-            "storeCode": "T06",
-            "storeName": "중우타이중",
-            "actualSales": 761.9,
-            "rent": 252.71,
-            "payroll": 114.59,
-            "sga": 287.46,
-            "operatingProfit": 146.1,
-            "fixedCost": 367.3,
-            "contributionMargin": 0.6738,
-            "bepSales": 545.08,
-            "bepAchievement": 1.3978,
-            "safetyMargin": 0.2846,
-            "rentRatio": 0.3317,
-            "payrollRatio": 0.1504,
-            "yoyGrowth": -0.0812,
+            "storeCode": "T17",
+            "storeName": "Lalaport Nangang(50PY)",
+            "actualSales": 619.05,
+            "rent": 199.12,
+            "payroll": 106.45,
+            "sga": 256.66,
+            "operatingProfit": 113.22,
+            "fixedCost": 305.57,
+            "contributionMargin": 0.6765,
+            "bepSales": 451.68,
+            "bepAchievement": 1.3705,
+            "safetyMargin": 0.2704,
+            "rentRatio": 0.3217,
+            "payrollRatio": 0.172,
+            "yoyGrowth": 0.1204,
             "statusKey": "safe",
             "statusLabel": "BEP 상회"
           },
@@ -12503,78 +12560,21 @@
             "statusLabel": "BEP 상회"
           },
           {
-            "storeCode": "T17",
-            "storeName": "Lalaport Nangang(50PY)",
-            "actualSales": 547.62,
-            "rent": 176.26,
-            "payroll": 106.45,
-            "sga": 245.23,
-            "operatingProfit": 81.97,
-            "fixedCost": 282.71,
-            "contributionMargin": 0.666,
-            "bepSales": 424.53,
-            "bepAchievement": 1.29,
-            "safetyMargin": 0.2248,
-            "rentRatio": 0.3219,
-            "payrollRatio": 0.1944,
-            "yoyGrowth": -0.0089,
-            "statusKey": "safe",
-            "statusLabel": "BEP 상회"
-          },
-          {
             "storeCode": "T01",
             "storeName": "Zhongxiao",
-            "actualSales": 738.1,
+            "actualSales": 742.86,
             "rent": 375.0,
             "payroll": 99.88,
             "sga": 298.35,
-            "operatingProfit": 126.01,
+            "operatingProfit": 128.74,
             "fixedCost": 474.88,
-            "contributionMargin": 0.8141,
-            "bepSales": 583.32,
-            "bepAchievement": 1.2653,
-            "safetyMargin": 0.2097,
-            "rentRatio": 0.5081,
-            "payrollRatio": 0.1353,
-            "yoyGrowth": -0.002,
-            "statusKey": "safe",
-            "statusLabel": "BEP 상회"
-          },
-          {
-            "storeCode": "T07",
-            "storeName": "빅시티",
-            "actualSales": 595.24,
-            "rent": 255.95,
-            "payroll": 105.63,
-            "sga": 284.06,
-            "operatingProfit": 95.55,
-            "fixedCost": 361.58,
-            "contributionMargin": 0.768,
-            "bepSales": 470.82,
-            "bepAchievement": 1.2643,
-            "safetyMargin": 0.209,
-            "rentRatio": 0.43,
-            "payrollRatio": 0.1775,
-            "yoyGrowth": null,
-            "statusKey": "safe",
-            "statusLabel": "BEP 상회"
-          },
-          {
-            "storeCode": "T18",
-            "storeName": "Lalaport Taichung",
-            "actualSales": 547.62,
-            "rent": 176.52,
-            "payroll": 97.36,
-            "sga": 262.99,
-            "operatingProfit": 64.21,
-            "fixedCost": 273.88,
-            "contributionMargin": 0.6174,
-            "bepSales": 443.62,
-            "bepAchievement": 1.2344,
-            "safetyMargin": 0.1899,
-            "rentRatio": 0.3223,
-            "payrollRatio": 0.1778,
-            "yoyGrowth": -0.202,
+            "contributionMargin": 0.8126,
+            "bepSales": 584.42,
+            "bepAchievement": 1.2711,
+            "safetyMargin": 0.2133,
+            "rentRatio": 0.5048,
+            "payrollRatio": 0.1345,
+            "yoyGrowth": 0.0044,
             "statusKey": "safe",
             "statusLabel": "BEP 상회"
           },
@@ -12617,25 +12617,6 @@
             "statusLabel": "BEP 상회"
           },
           {
-            "storeCode": "T14",
-            "storeName": "MetroWalk (40PY)",
-            "actualSales": 438.1,
-            "rent": 141.22,
-            "payroll": 64.31,
-            "sga": 215.06,
-            "operatingProfit": 34.24,
-            "fixedCost": 205.52,
-            "contributionMargin": 0.5473,
-            "bepSales": 375.54,
-            "bepAchievement": 1.1666,
-            "safetyMargin": 0.1428,
-            "rentRatio": 0.3223,
-            "payrollRatio": 0.1468,
-            "yoyGrowth": -0.3434,
-            "statusKey": "safe",
-            "statusLabel": "BEP 상회"
-          },
-          {
             "storeCode": "D06",
             "storeName": "Hanshin Arena TC",
             "actualSales": 714.29,
@@ -12651,25 +12632,6 @@
             "rentRatio": 0.42,
             "payrollRatio": 0.1935,
             "yoyGrowth": null,
-            "statusKey": "safe",
-            "statusLabel": "BEP 상회"
-          },
-          {
-            "storeCode": "TU2",
-            "storeName": "린커우아울렛",
-            "actualSales": 738.1,
-            "rent": 178.43,
-            "payroll": 78.81,
-            "sga": 175.74,
-            "operatingProfit": 36.25,
-            "fixedCost": 257.24,
-            "contributionMargin": 0.3976,
-            "bepSales": 646.94,
-            "bepAchievement": 1.1409,
-            "safetyMargin": 0.1235,
-            "rentRatio": 0.2417,
-            "payrollRatio": 0.1068,
-            "yoyGrowth": 0.7491,
             "statusKey": "safe",
             "statusLabel": "BEP 상회"
           },
@@ -12695,19 +12657,38 @@
           {
             "storeCode": "TU1",
             "storeName": "Mitsui Outlet",
-            "actualSales": 876.19,
-            "rent": 281.41,
+            "actualSales": 757.14,
+            "rent": 243.31,
             "payroll": 82.9,
-            "sga": 242.42,
-            "operatingProfit": 18.59,
-            "fixedCost": 364.3,
-            "contributionMargin": 0.437,
-            "bepSales": 833.65,
-            "bepAchievement": 1.051,
-            "safetyMargin": 0.0486,
-            "rentRatio": 0.3212,
-            "payrollRatio": 0.0946,
-            "yoyGrowth": 0.4414,
+            "sga": 223.37,
+            "operatingProfit": 2.17,
+            "fixedCost": 326.21,
+            "contributionMargin": 0.4337,
+            "bepSales": 752.13,
+            "bepAchievement": 1.0067,
+            "safetyMargin": 0.0066,
+            "rentRatio": 0.3214,
+            "payrollRatio": 0.1095,
+            "yoyGrowth": 0.2456,
+            "statusKey": "watch",
+            "statusLabel": "관찰"
+          },
+          {
+            "storeCode": "TU2",
+            "storeName": "린커우아울렛",
+            "actualSales": 523.81,
+            "rent": 127.0,
+            "payroll": 78.81,
+            "sga": 150.03,
+            "operatingProfit": 0.42,
+            "fixedCost": 205.81,
+            "contributionMargin": 0.3937,
+            "bepSales": 522.75,
+            "bepAchievement": 1.002,
+            "safetyMargin": 0.002,
+            "rentRatio": 0.2425,
+            "payrollRatio": 0.1505,
+            "yoyGrowth": 0.2413,
             "statusKey": "watch",
             "statusLabel": "관찰"
           },
@@ -12774,8 +12755,8 @@
             "actualSales": 357.14,
             "rent": 0.0,
             "payroll": 0.0,
-            "sga": 81.24,
-            "operatingProfit": 131.71,
+            "sga": 81.21,
+            "operatingProfit": 131.73,
             "fixedCost": 0.0,
             "contributionMargin": 0.3688,
             "bepSales": 0.0,
@@ -12809,38 +12790,38 @@
           {
             "storeCode": "TE2",
             "storeName": "자사몰",
-            "actualSales": 1997.62,
+            "actualSales": 2047.62,
             "rent": 0.0,
             "payroll": 0.0,
-            "sga": 329.22,
-            "operatingProfit": 807.53,
+            "sga": 334.24,
+            "operatingProfit": 830.95,
             "fixedCost": 0.0,
-            "contributionMargin": 0.4042,
+            "contributionMargin": 0.4058,
             "bepSales": 0.0,
             "bepAchievement": null,
             "safetyMargin": null,
             "rentRatio": 0.0,
             "payrollRatio": 0.0,
-            "yoyGrowth": -0.0033,
+            "yoyGrowth": 0.0216,
             "statusKey": "unknown",
             "statusLabel": "산출 불가"
           },
           {
             "storeCode": "TE3",
             "storeName": "Shopee",
-            "actualSales": 747.62,
+            "actualSales": 1223.81,
             "rent": 0.0,
             "payroll": 0.0,
             "sga": 291.07,
-            "operatingProfit": 134.37,
+            "operatingProfit": 405.34,
             "fixedCost": 0.0,
-            "contributionMargin": 0.1797,
+            "contributionMargin": 0.3312,
             "bepSales": 0.0,
             "bepAchievement": null,
             "safetyMargin": null,
             "rentRatio": 0.0,
             "payrollRatio": 0.0,
-            "yoyGrowth": -0.3772,
+            "yoyGrowth": 0.0194,
             "statusKey": "unknown",
             "statusLabel": "산출 불가"
           }
