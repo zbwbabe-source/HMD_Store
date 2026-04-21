@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import snowflake from "snowflake-sdk";
@@ -234,11 +234,63 @@ function escapeSqlLiteral(value: string) {
   return value.replace(/'/g, "''");
 }
 
+function getSnowflakeActualsCachePath(actualYear: number, actualMonth: number) {
+  return join(
+    process.cwd(),
+    "data",
+    "cache",
+    "snowflake-actuals",
+    `${actualYear}-${String(actualMonth).padStart(2, "0")}.json`,
+  );
+}
+
+function readSnowflakeActualsCache(storeCodes: string[], actualYear: number, actualMonth: number) {
+  const filePath = getSnowflakeActualsCachePath(actualYear, actualMonth);
+  if (!existsSync(filePath)) return null;
+
+  const payload = JSON.parse(readFileSync(filePath, "utf-8")) as {
+    storeCodes?: string[];
+    monthlyActuals?: Record<string, Record<string, number>>;
+  };
+
+  const cachedStoreCodes = [...(payload.storeCodes ?? [])].sort();
+  const requestedStoreCodes = [...storeCodes].sort();
+  if (cachedStoreCodes.length !== requestedStoreCodes.length) return null;
+  if (cachedStoreCodes.some((code, index) => code !== requestedStoreCodes[index])) return null;
+
+  return payload.monthlyActuals ?? null;
+}
+
+function writeSnowflakeActualsCache(
+  storeCodes: string[],
+  actualYear: number,
+  actualMonth: number,
+  monthlyActuals: Record<string, Record<string, number>>,
+) {
+  const filePath = getSnowflakeActualsCachePath(actualYear, actualMonth);
+  mkdirSync(join(process.cwd(), "data", "cache", "snowflake-actuals"), { recursive: true });
+  writeFileSync(
+    filePath,
+    JSON.stringify(
+      {
+        storeCodes: [...storeCodes].sort(),
+        monthlyActuals,
+      },
+      null,
+      2,
+    ),
+    "utf-8",
+  );
+}
+
 function connectSnowflake() {
+  const privateKey = process.env.SNOWFLAKE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+
   return snowflake.createConnection({
     account: process.env.SNOWFLAKE_ACCOUNT ?? "",
     username: process.env.SNOWFLAKE_USERNAME ?? "",
-    password: process.env.SNOWFLAKE_PASSWORD ?? "",
+    authenticator: "SNOWFLAKE_JWT",
+    privateKey: privateKey ?? "",
     warehouse: process.env.SNOWFLAKE_WAREHOUSE ?? "",
     database: process.env.SNOWFLAKE_DATABASE ?? "",
     schema: process.env.SNOWFLAKE_SCHEMA ?? "",
@@ -262,7 +314,11 @@ function executeSnowflake(connection: snowflake.Connection, sqlText: string) {
 
 async function fetchSqlActuals(storeCodes: string[], actualYear: number, actualMonth: number) {
   if (storeCodes.length === 0) return {} as Record<string, Record<string, number>>;
-  if (!process.env.SNOWFLAKE_ACCOUNT || !process.env.SNOWFLAKE_USERNAME || !process.env.SNOWFLAKE_PASSWORD) {
+
+  const cached = readSnowflakeActualsCache(storeCodes, actualYear, actualMonth);
+  if (cached) return cached;
+
+  if (!process.env.SNOWFLAKE_ACCOUNT || !process.env.SNOWFLAKE_USERNAME || !process.env.SNOWFLAKE_PRIVATE_KEY) {
     throw new Error("Snowflake credentials are not configured");
   }
 
@@ -311,6 +367,7 @@ async function fetchSqlActuals(storeCodes: string[], actualYear: number, actualM
       storeActuals[periodKey] = amount;
     }
 
+    writeSnowflakeActualsCache(storeCodes, actualYear, actualMonth, monthlyActuals);
     return monthlyActuals;
   } finally {
     connection.destroy(() => {});
