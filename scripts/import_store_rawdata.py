@@ -141,7 +141,7 @@ def iter_records(ws) -> tuple[list[dict[str, str]], list[dict[str, str]], int]:
     period_columns = detect_period_columns(headers)
     header_map = {normalize_text(value): index for index, value in enumerate(headers)}
 
-    required_headers = ["브랜드", "국가", "채널", "code", "매장", "비용구분", "계정", "Account_EN"]
+    required_headers = ["브랜드", "국가", "채널", "code", "매장", "계정", "Account_EN"]
     missing_headers = [header for header in required_headers if header not in header_map]
     if missing_headers:
         raise ValueError(f"Missing required headers: {', '.join(missing_headers)}")
@@ -160,7 +160,7 @@ def iter_records(ws) -> tuple[list[dict[str, str]], list[dict[str, str]], int]:
             normalize_text(row[header_map["code"]]),
             normalize_text(row[header_map["매장"]]),
         )
-        expense_category = normalize_text(row[header_map["비용구분"]])
+        expense_category = normalize_text(row[header_map["비용구분"]]) if "비용구분" in header_map else ""
         account_name = normalize_text(row[header_map["계정"]])
         account_name_en = normalize_text(row[header_map["Account_EN"]])
 

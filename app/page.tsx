@@ -50,7 +50,7 @@ export default async function Home({
   const dataPath = join(process.cwd(), "data", "dashboard-data.json");
   const data = JSON.parse(readFileSync(dataPath, "utf-8"));
   const viewSettings = loadViewSettings();
-  const actualPeriod = resolveActualPeriod(resolvedSearchParams.actualPeriod, viewSettings.actualPeriod) ?? "2026-03";
+  const actualPeriod = resolveActualPeriod(resolvedSearchParams.actualPeriod, viewSettings.actualPeriod) ?? "2026-04";
   const twExchangeRates = loadTwExchangeRates(viewSettings.twExchangeRates);
   const storeMonthlySales = await loadStoreMonthlySales(actualPeriod, twExchangeRates);
   const profitCardData = loadProfitCardData();
