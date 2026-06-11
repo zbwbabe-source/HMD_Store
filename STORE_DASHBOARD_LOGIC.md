@@ -100,6 +100,12 @@ TW의 SQL actual은 월별 환율을 적용해서 HKD로 환산합니다.
 
 즉, 환율 차이에 의해 YoY가 왜곡되지 않도록 비교 기준을 맞추는 방식입니다.
 
+> 구현 메모: TW actual(실매출액)의 TWD 원천은 매 요청마다 Snowflake를 치지 않고
+> `data/tw-actuals-twd.json` 스냅샷(1k TWD)에 누적해 둡니다. 실적기준월이 넘어가면
+> `python scripts/update_tw_actuals_snapshot.py`로 새로 마감된 달만 증분 갱신합니다.
+> 런타임([lib/server-data.ts])은 이 TWD 값을 위 규칙(기준연도 동일월 환율 공통)으로
+> HKD 환산해 Excel actual 구간을 덮어씁니다.
+
 ### 6.2 당해연도 기준월 이후 forecast 월
 
 TW의 당해연도 forecast 월은 `Store_Rawdata.xlsx` 값이 이미 `1k HKD` 기준입니다.

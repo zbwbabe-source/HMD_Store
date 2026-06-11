@@ -137,14 +137,6 @@ type ProfitBreakdownMetric = {
   operatingOtherDetails: Record<string, number>;
 };
 
-type MonthlyProfitTrendPoint = {
-  month: number;
-  sales: number | null;
-  grossProfit: number | null;
-  directProfit: number | null;
-  operatingProfit: number | null;
-};
-
 type TableRow = {
   kind: RowKind;
   country: string;
@@ -606,6 +598,7 @@ export function DashboardShell({
     return Object.entries(regionSales)
       .map(([storeCode, salesSource]) => {
         if (selectedBrand !== "ALL" && salesSource.brand !== selectedBrand) return null;
+        if (salesSource.channel.includes("오피스")) return null;
 
         const months = MONTH_OPTIONS.map((month) => ({
           month,
@@ -1039,25 +1032,6 @@ export function DashboardShell({
       };
     });
   }, [cardMetricMode, channelHighlights, discountVatFactor, filteredProfitStores, latestYear, selectedMonth]);
-  const monthlyProfitTrend = useMemo<MonthlyProfitTrendPoint[]>(
-    () =>
-      MONTH_OPTIONS.map((month) => {
-        const metric = aggregateProfitMetrics(
-          filteredProfitStores.map((store) => buildProfitMetricForStore(store, latestYear, month, "month", discountVatFactor)),
-          discountVatFactor,
-        );
-
-        return {
-          month,
-          sales: metric.sales,
-          grossProfit: metric.grossProfit,
-          directProfit: metric.directProfit,
-          operatingProfit: metric.operatingProfit,
-        };
-      }),
-    [discountVatFactor, filteredProfitStores, latestYear],
-  );
-
   const trendSummary = useMemo(() => {
     const strongestGrowth = channelHighlights
       .filter((item) => item.displayChannelMetric.yoyPrev != null)
@@ -1817,16 +1791,6 @@ export function DashboardShell({
           )}
         </section>
 
-        <section className="grid gap-4">
-          <MonthlyProfitTrendCard
-            title={language === "en" ? "Monthly Profit Trend" : "월별 손익추세"}
-            subtitle={language === "en" ? `FY ${latestYear} monthly flow from normalized CSV` : `${latestYear}년 월별 손익 흐름`}
-            points={monthlyProfitTrend}
-            currencyLabel={effectiveCurrencyMode}
-            language={language}
-          />
-        </section>
-
       </div>
       {showRateEditor ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/45 px-4 py-6">
@@ -2403,169 +2367,6 @@ function ChannelHighlightCard({
           <p className="text-xs uppercase tracking-[0.16em] text-stone-400">{yoyLabel}</p>
           <p className={`mt-1 text-base font-semibold ${valueTone(yoyTone ?? null).replace("text-stone-400", "text-stone-900")}`}>{yoyValue}</p>
           {yoyDetail ? <p className="mt-1 text-[12px]">{yoyDetail}</p> : null}
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function MonthlyProfitTrendCard({
-  title,
-  subtitle,
-  points,
-  currencyLabel,
-  language,
-}: {
-  title: string;
-  subtitle: string;
-  points: MonthlyProfitTrendPoint[];
-  currencyLabel: CurrencyMode;
-  language: Language;
-}) {
-  const series = [
-    {
-      key: "sales",
-      label: language === "en" ? "Net Sales" : "\uC2E4\uD310\uB9E4\uCD9C",
-      color: "#0f766e",
-      values: points.map((point) => point.sales),
-    },
-    {
-      key: "grossProfit",
-      label: language === "en" ? "Gross Profit" : "\uB9E4\uCD9C\uCD1D\uC774\uC775",
-      color: "#2563eb",
-      values: points.map((point) => point.grossProfit),
-    },
-    {
-      key: "directProfit",
-      label: language === "en" ? "Direct Profit" : "\uC9C1\uC811\uC774\uC775",
-      color: "#d97706",
-      values: points.map((point) => point.directProfit),
-    },
-    {
-      key: "operatingProfit",
-      label: language === "en" ? "Operating Profit" : "\uC601\uC5C5\uC774\uC775",
-      color: "#dc2626",
-      values: points.map((point) => point.operatingProfit),
-    },
-  ] as const;
-
-  const numericValues = series.flatMap((item) => item.values).filter((value): value is number => value != null && !Number.isNaN(value));
-  const minValue = numericValues.length > 0 ? Math.min(...numericValues, 0) : 0;
-  const maxValue = numericValues.length > 0 ? Math.max(...numericValues, 0) : 0;
-  const range = maxValue - minValue || 1;
-
-  const width = 100;
-  const height = 40;
-  const xForIndex = (index: number) => (points.length <= 1 ? 0 : (index / (points.length - 1)) * width);
-  const yForValue = (value: number) => height - ((value - minValue) / range) * height;
-  const axisTicks = [1, 0.75, 0.5, 0.25, 0].map((ratio) => ({
-    ratio,
-    value: minValue + range * ratio,
-  }));
-
-  return (
-    <article className="rounded-[24px] border border-white/55 bg-white/88 p-4 shadow-[0_16px_40px_rgba(65,46,24,0.10)]">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-base font-semibold leading-snug text-stone-900">{title}</p>
-          <p className="mt-1 text-xs text-stone-400">{subtitle}</p>
-        </div>
-        <p className="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-stone-600">K {currencyLabel}</p>
-      </div>
-
-      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-        <div className="rounded-[20px] border border-stone-200/80 bg-[#fcfaf6] p-3">
-          <div className="mb-3 flex flex-wrap gap-2">
-            {series.map((item) => (
-              <span
-                key={item.key}
-                className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-semibold text-stone-700"
-              >
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                {item.label}
-              </span>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-[56px_minmax(0,1fr)] gap-3">
-            <div className="relative h-56 text-[11px] font-medium text-stone-500">
-              {axisTicks.map((tick) => (
-                <span
-                  key={tick.ratio}
-                  className="absolute right-0 -translate-y-1/2"
-                  style={{ top: `${(1 - tick.ratio) * 100}%` }}
-                >
-                  {formatSalesCell(tick.value)}
-                </span>
-              ))}
-            </div>
-            <svg viewBox={`0 0 ${width} ${height}`} className="h-56 w-full overflow-visible">
-              {axisTicks.map((tick) => {
-                const y = height - tick.ratio * height;
-                return <line key={tick.ratio} x1="0" y1={y} x2={width} y2={y} stroke="#e7e5e4" strokeDasharray="1.5 2" strokeWidth="0.4" />;
-              })}
-              {series.map((item) => {
-                const coords = item.values
-                  .map((value, index) => (value == null ? null : `${xForIndex(index)},${yForValue(value)}`))
-                  .filter((value): value is string => value != null);
-                if (coords.length === 0) return null;
-                return <polyline key={item.key} fill="none" stroke={item.color} strokeWidth="1.3" points={coords.join(" ")} />;
-              })}
-              {series.map((item) =>
-                item.values.map((value, index) =>
-                  value == null ? null : (
-                    <circle key={`${item.key}-${index}`} cx={xForIndex(index)} cy={yForValue(value)} r="1.1" fill={item.color} />
-                  ),
-                ),
-              )}
-            </svg>
-          </div>
-
-          <div className="mt-2 grid grid-cols-6 gap-2 text-[11px] font-medium text-stone-500 md:grid-cols-12">
-            {points.map((point) => (
-              <span key={point.month} className="text-center">
-                {language === "en" ? MONTH_NAMES_EN[point.month - 1] : `${point.month}\uC6D4`}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
-          {series.map((item) => {
-            const latestValue = item.values[item.values.length - 1];
-            const firstValue = item.values[0];
-            const change = calculateRatioChange(latestValue, firstValue);
-
-            return (
-              <div key={item.key} className="rounded-[18px] border border-stone-200 bg-[#fcfaf6] px-4 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                    <p className="text-sm font-semibold text-stone-900">{item.label}</p>
-                  </div>
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${pillTone(change)}`}>
-                    {language === "en" ? "Jan to Latest" : "\uC5F0\uCD08 \uB300\uBE44"} {formatYoyRate(change)}
-                  </span>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400">
-                      {language === "en" ? "Latest" : "\uCD5C\uADFC \uC6D4"}
-                    </p>
-                    <p className="mt-1 font-semibold text-stone-900">{formatProfitAmount(latestValue)} K {currencyLabel}</p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.16em] text-stone-400">
-                      {language === "en" ? "Peak" : "\uC5F0\uC911 \uCD5C\uACE0"}
-                    </p>
-                    <p className="mt-1 font-semibold text-stone-900">
-                      {formatProfitAmount(maxSeriesValue(item.values))} K {currencyLabel}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
         </div>
       </div>
     </article>
@@ -3258,12 +3059,6 @@ function ProfitDeltaCell({
       ) : null}
     </div>
   );
-}
-
-function maxSeriesValue(values: Array<number | null>) {
-  const numericValues = values.filter((value): value is number => value != null && !Number.isNaN(value));
-  if (numericValues.length === 0) return null;
-  return Math.max(...numericValues);
 }
 
 function buildProfitMetricForStore(

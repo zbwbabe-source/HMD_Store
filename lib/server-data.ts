@@ -427,14 +427,10 @@ function mergeSources(
 ) {
   for (const regionPayload of Object.values(payload)) {
     for (const [storeCode, store] of Object.entries(regionPayload)) {
-      if (store.country === "TW") {
-        store.monthlySales = sortPeriodMap({ ...store.monthlySales });
-        store.monthlyTagSales = sortPeriodMap({ ...store.monthlyTagSales });
-        store.annualTotals = buildAnnualTotals(store.monthlySales);
-        store.annualTagTotals = buildAnnualTotals(store.monthlyTagSales);
-        continue;
-      }
-
+      // TW actuals arrive as TWD (from the snapshot) and convertAmount() rebases
+      // them to HKD at the base(actual)-year same-month rate; HKMC actuals are
+      // already HKD and convertAmount() leaves them untouched. Both flow through
+      // the same merge loop below.
       const monthlySales = { ...store.monthlySales };
       const monthlyTagSales = { ...store.monthlyTagSales };
       const sqlMonths = sqlActuals[storeCode] ?? {};
@@ -474,19 +470,34 @@ function loadSnapshotStoreMonthlySales() {
   return JSON.parse(readFileSync(filePath, "utf-8")) as StoreMonthlySales;
 }
 
+// TW actual sales (실매출액) in TWD(thousands), accumulated once from Snowflake and
+// topped up by scripts/update_tw_actuals_snapshot.py when the base month advances.
+// Keyed by store code -> period_key -> TWD(k). See STORE_DASHBOARD_LOGIC.md §6.1.
+function loadTwActualsTwd(): Record<string, Record<string, number>> {
+  const filePath = join(process.cwd(), "data", "tw-actuals-twd.json");
+  if (!existsSync(filePath)) return {};
+  const parsed = JSON.parse(readFileSync(filePath, "utf-8")) as {
+    stores?: Record<string, Record<string, number>>;
+  };
+  return parsed.stores ?? {};
+}
+
 export async function loadStoreMonthlySales(actualPeriod: string, exchangeRates: Record<string, number>) {
   const { year: actualYear, month: actualMonth } = parseActualPeriod(actualPeriod);
   const baseline = loadExcelBaseline(exchangeRates, actualYear, actualMonth);
-  const storeCodes = Object.values(baseline).flatMap((stores) => Object.keys(stores)).sort();
+  const twActuals = loadTwActualsTwd();
+  const hkmcStoreCodes = Object.keys(baseline.HKMC).sort();
 
   try {
-    const sqlActuals = await fetchSqlActuals(storeCodes, actualYear, actualMonth);
-    return mergeSources(baseline, sqlActuals, actualYear, actualMonth, exchangeRates);
+    // Only HKMC needs a live query; TW comes from the persisted TWD snapshot.
+    const sqlActuals = await fetchSqlActuals(hkmcStoreCodes, actualYear, actualMonth);
+    return mergeSources(baseline, { ...sqlActuals, ...twActuals }, actualYear, actualMonth, exchangeRates);
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("Falling back to snapshot store monthly sales:", error);
+      console.warn("Snowflake unavailable; using TW snapshot + Excel baseline:", error);
     }
-    return baseline;
+    // The TW snapshot still rebases TW even when the HKMC live query is down.
+    return mergeSources(baseline, twActuals, actualYear, actualMonth, exchangeRates);
   }
 }
 
